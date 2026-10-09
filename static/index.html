@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="zh-Hant">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport"
+            content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+        <title>HomeTV Remote</title>
+        <style>
+    :root { color-scheme: dark; --bg: #070b16; --panel: #111827; --line: #263248; --text: #f8fafc; --muted: #94a3b8; --accent: #8b5cf6; --accent-2: #22d3ee; }
+    * { box-sizing: border-box; }
+    body { margin: 0; width: 100%; height: 100vh; height: 100dvh; display: grid; place-items: center; padding: 0; overflow: hidden; color: var(--text); font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; background: radial-gradient(circle at 15% 0%, #1d1745 0, transparent 35%), radial-gradient(circle at 100% 100%, #063b4b 0, transparent 32%), var(--bg); }
+    .remote { width: 100%; height: 100vh; height: 100dvh; max-width: 100%; padding: clamp(10px, 2.5vw, 24px); border: 0; border-radius: 0; background: linear-gradient(145deg, #172033ee, #0d1422ee); box-shadow: none; backdrop-filter: blur(18px); overflow: hidden; }
+    header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+    h1 { margin: 0; font-size: clamp(20px, 5vw, 30px); letter-spacing: .3px; }
+    .status { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 13px; }
+    .status-action { padding: 10px; margin: -10px; border-radius: 16px; cursor: pointer; user-select: none; -webkit-user-select: none; }
+    .status-action:active { background: #ffffff0d; }
+    .dot { width: 9px; height: 9px; border-radius: 50%; background: #fb7185; }
+    .dot.online { background: #34d399; box-shadow: 0 0 14px #34d399; }
+    button { border: 1px solid #ffffff12; border-radius: 18px; color: var(--text); background: linear-gradient(145deg, #1b2639, #253149); font: inherit; cursor: pointer; transition: transform .15s, border-color .15s, box-shadow .15s; touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; box-shadow: inset 0 2px 4px #0005, inset 0 -1px #ffffff0d; }
+    button:hover { border-color: #8b5cf699; box-shadow: inset 0 2px 5px #0006, 0 0 0 3px #8b5cf61c; }
+    button:active { transform: translateY(2px) scale(.98); background: #111a2b; box-shadow: inset 0 4px 10px #0009, inset 0 1px 2px #0006; }
+    .nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(10px, 3vw, 20px); margin: clamp(24px, 6vw, 44px) auto 0; width: 100%; max-width: 520px; padding: 0; border: 0; border-radius: 0; background: transparent; }
+    .nav button { width: 100%; height: clamp(72px, 18vw, 112px); font-size: clamp(32px, 8vw, 52px); border-radius: clamp(20px, 5vw, 32px); }
+    .nav .blank { visibility: hidden; }
+    .wide { width: 100%; height: 52px; margin-bottom: 12px; font-weight: 600; border-radius: 18px; }
+    .actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(8px, 2.5vw, 16px); }
+    .actions + .actions { margin-top: 12px; }
+    .actions button { height: clamp(52px, 13vw, 76px); font-size: clamp(16px, 4vw, 24px); }
+    .actions .power, header .power { color: #fff; }
+    header .power { width: clamp(48px, 12vw, 72px); height: clamp(48px, 12vw, 72px); font-size: clamp(20px, 5vw, 30px); }
+    .volume { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: auto; margin: 14px 0 0; }
+    .volume button { height: clamp(52px, 13vw, 76px); border-radius: 14px; font-size: clamp(20px, 5vw, 30px); }
+    .volume button:first-child { order: 2; }
+    .apps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 14px; }
+    .apps button { height: clamp(48px, 11vw, 68px); font-size: clamp(14px, 3.5vw, 20px); border-radius: 14px; }
+    .text-input { display: flex; gap: 12px; margin-top: 14px; }
+    .text-input input { min-width: 0; flex: 1; height: clamp(52px, 13vw, 76px); padding: 0 14px; border: 1px solid #ffffff14; border-radius: 16px; outline: none; color: var(--text); background: #080d18cc; font: inherit; font-size: clamp(16px, 4vw, 22px); }
+    .text-input input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px #8b5cf633; }
+    .text-input button { width: clamp(76px, 20vw, 120px); font-size: clamp(14px, 3.5vw, 20px); }
+    .info { min-height: 18px; margin-top: 18px; color: var(--muted); text-align: center; font-size: 12px; }
+    .error { color: #ff7b72; }
+    .pair-button { width: 100%; height: 42px; margin-top: 12px; border-radius: 14px; color: var(--muted); font-size: 14px; }
+    dialog { width: min(90vw, 360px); padding: 0; border: 1px solid #ffffff24; border-radius: 24px; color: var(--text); background: #111827f5; box-shadow: 0 24px 80px #000b; }
+    dialog::backdrop { background: #020617aa; backdrop-filter: blur(5px); }
+    .pair-dialog { padding: 24px; }
+    .pair-dialog h2 { margin: 0 0 10px; font-size: 20px; }
+    .pair-dialog p { margin: 0 0 14px; color: var(--muted); font-size: 14px; line-height: 1.5; }
+    .pair-dialog input { width: 100%; height: 52px; padding: 0 14px; border: 1px solid var(--line); border-radius: 14px; outline: none; color: var(--text); background: #080d18; font: inherit; font-size: 22px; letter-spacing: 5px; text-align: center; }
+    .pair-dialog input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px #8b5cf633; }
+    .pair-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
+    .pair-actions button { height: 46px; border-radius: 14px; }
+    .pair-dialog > .wide { margin-top: 12px; margin-bottom: 0; }
+    @media (max-width: 480px) {
+      .remote { padding-left: 12px; padding-right: 12px; }
+      .nav { gap: 8px; }
+    }
+    @media (max-height: 800px) {
+      header { margin-bottom: 8px; }
+      .actions + .actions { margin-top: 8px; }
+      .volume { margin-top: 10px; }
+      .apps { margin-top: 10px; }
+      .text-input { margin-top: 10px; }
+      .nav { margin-top: 18px; }
+      .nav button { height: 64px; }
+      .info { margin-top: 8px; }
+    }
+  </style>
+    </head>
+    <body>
+        <main class="remote">
+            <header><button class="power"
+                    data-key="power">⏻</button><h1>HomeTV<br><small
+                        id="status">連線中…</small></h1><div id="status-action"
+                    class="status status-action" title="長按重新配對"><span
+                        id="dot" class="dot"></span></div></header>
+            <div class="actions"><button data-key="rewind">◀◀</button><button
+                    data-key="play_pause">▶Ⅱ</button><button
+                    data-key="fast_forward">▶▶</button></div>
+            <div class="actions"><button data-key="mute">🔇</button><button
+                    data-key="home">⌂</button><button
+                    data-key="back">↩</button></div>
+            <div class="volume"><button data-key="volume_up"
+                    aria-label="音量增加">＋</button><button data-key="volume_down"
+                    aria-label="音量降低">－</button></div>
+            <div class="apps"><button
+                    data-uri="https://www.youtube.com">YouTube</button><button
+                    data-uri="netflix://">Netflix</button><button
+                    data-uri="https://www.disneyplus.com">Disney+</button></div>
+            <form id="text-form" class="text-input">
+                <input id="text-input" type="text" maxlength="500"
+                    placeholder="輸入文字到電視" autocomplete="off">
+                <button type="submit">送出</button>
+            </form>
+            <section id="direction-pad" class="nav" aria-label="方向鍵">
+                <span class="blank"></span><button data-key="up">▲</button><span
+                    class="blank"></span>
+                <button data-key="left">◀</button><button
+                    data-key="enter">●</button><button
+                    data-key="right">▶</button>
+                <span class="blank"></span><button
+                    data-key="down">▼</button><span class="blank"></span>
+            </section>
+            <div id="info" class="info">正在取得電視狀態…</div>
+        </main>
+        <dialog id="pair-dialog">
+            <form id="pair-form" class="pair-dialog">
+                <h2>重新配對電視</h2>
+                <p id="pair-message">按下開始配對後，請查看電視畫面上的配對碼。</p>
+                <input id="pair-code" type="text" inputmode="text"
+                    autocomplete="off" autocapitalize="characters"
+                    spellcheck="false" maxlength="20" placeholder="配對碼">
+                <div class="pair-actions">
+                    <button id="pair-start" type="button">開始配對</button>
+                    <button type="button" id="pair-cancel">取消</button>
+                </div>
+                <button id="pair-finish" type="submit" class="wide"
+                    disabled>完成配對</button>
+            </form>
+        </dialog>
+        <script>
+    const $ = (id) => document.getElementById(id);
+    let lastRequestMs = 0;
+    async function call(url, options = {}) {
+      const started = performance.now();
+      const response = await fetch(url, options);
+      lastRequestMs = Math.round(performance.now() - started);
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body.detail || `HTTP ${response.status}`);
+      return body;
+    }
+    async function refresh() {
+      try {
+        const s = await call('/api/tv/status');
+        $('dot').classList.toggle('online', !!s.available);
+        $('status').textContent = s.available ? (s.on ? '已連線' : '待機中') : '未連線';
+        $('info').textContent = s.current_app ? `目前 App：${s.current_app}` : '已準備就緒';
+      } catch (e) { $('status').textContent = '未連線'; $('info').textContent = e.message; $('info').className = 'info error'; }
+    }
+    async function sendKey(button) {
+      try { await call(`/api/tv/keys/${button.dataset.key}`, { method: 'POST' }); $('info').textContent = `指令已送出 · ${lastRequestMs} ms`; $('info').className = 'info'; }
+      catch (e) { $('info').textContent = e.message; $('info').className = 'info error'; }
+    }
+    function vibrate(duration = 18) {
+      if (navigator.vibrate) navigator.vibrate(duration);
+    }
+    document.querySelectorAll('button').forEach((button) => {
+      button.addEventListener('contextmenu', (event) => event.preventDefault());
+      button.addEventListener('selectstart', (event) => event.preventDefault());
+    });
+    document.querySelectorAll('[data-key]').forEach((button) => {
+      let repeatTimer;
+      let suppressClick = false;
+      const stopRepeating = () => {
+        clearTimeout(repeatTimer);
+        clearInterval(button.repeatInterval);
+        button.repeatInterval = undefined;
+      };
+      button.addEventListener('pointerdown', (event) => {
+        if (event.pointerType === 'mouse' && event.button !== 0) return;
+        event.preventDefault();
+        suppressClick = true;
+        vibrate();
+        button.setPointerCapture?.(event.pointerId);
+        sendKey(button);
+        repeatTimer = setTimeout(() => {
+          button.repeatInterval = setInterval(() => sendKey(button), 130);
+        }, 350);
+      });
+      ['pointerup', 'pointercancel', 'lostpointercapture'].forEach((eventName) => {
+        button.addEventListener(eventName, stopRepeating, { once: false });
+      });
+      button.addEventListener('click', (event) => {
+        if (suppressClick) { event.preventDefault(); suppressClick = false; return; }
+        sendKey(button);
+      });
+    });
+    document.querySelectorAll('[data-uri]').forEach((button) => button.addEventListener('click', async () => {
+      try { await call('/api/tv/apps/launch', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ uri: button.dataset.uri }) }); $('info').textContent = `${button.textContent} 已開啟 · ${lastRequestMs} ms`; }
+      catch (e) { $('info').textContent = e.message; $('info').className = 'info error'; }
+    }));
+    $('text-form').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const input = $('text-input');
+      const text = input.value.trim();
+      if (!text) return;
+      try {
+        await call('/api/tv/text', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ text }) });
+        $('info').textContent = `文字已送出 · ${lastRequestMs} ms`;
+        $('info').className = 'info';
+        input.select();
+      } catch (e) { $('info').textContent = e.message; $('info').className = 'info error'; }
+    });
+    const pairDialog = $('pair-dialog');
+    const pairCode = $('pair-code');
+    const pairMessage = $('pair-message');
+    const pairStart = $('pair-start');
+    const pairFinish = $('pair-finish');
+    function openPairDialog() {
+      pairCode.value = '';
+      pairCode.disabled = false;
+      pairFinish.disabled = true;
+      pairStart.disabled = false;
+      pairMessage.textContent = '請先按開始配對；也可以先輸入配對碼。';
+      pairDialog.showModal();
+    }
+    let pairPressTimer;
+    const statusAction = $('status-action');
+    statusAction.addEventListener('pointerdown', (event) => {
+      event.preventDefault();
+      statusAction.setPointerCapture?.(event.pointerId);
+      pairPressTimer = setTimeout(openPairDialog, 700);
+    });
+    ['pointerup', 'pointercancel', 'pointerleave', 'lostpointercapture'].forEach((eventName) => {
+      statusAction.addEventListener(eventName, () => clearTimeout(pairPressTimer));
+    });
+    statusAction.addEventListener('contextmenu', (event) => event.preventDefault());
+    $('pair-cancel').addEventListener('click', () => pairDialog.close());
+    pairStart.addEventListener('click', async () => {
+      pairStart.disabled = true;
+      pairMessage.textContent = '正在開始配對，請稍候…';
+      try {
+        const result = await call('/api/tv/pair/start', { method: 'POST' });
+        pairCode.disabled = false;
+        pairFinish.disabled = false;
+        pairCode.focus();
+        pairMessage.textContent = result.message || '請輸入電視畫面上的配對碼。';
+      } catch (e) {
+        pairStart.disabled = false;
+        pairMessage.textContent = e.message;
+      }
+    });
+    $('pair-form').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const code = pairCode.value.trim();
+      if (!code) return;
+      pairFinish.disabled = true;
+      pairMessage.textContent = '正在完成配對…';
+      try {
+        await call('/api/tv/pair/finish', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ code }) });
+        pairDialog.close();
+        $('info').textContent = '配對成功';
+        $('info').className = 'info';
+        refresh();
+      } catch (e) {
+        pairFinish.disabled = false;
+        pairMessage.textContent = e.message;
+      }
+    });
+    refresh(); setInterval(refresh, 10000);
+  </script>
+    </body>
+</html>
