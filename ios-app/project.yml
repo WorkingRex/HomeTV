@@ -33,6 +33,7 @@ targets:
         NSLocalNetworkUsageDescription: HomeTV uses the local network to find and control your Android TV.
         NSBonjourServices:
           - _androidtvremote2._tcp
+        NSMotionUsageDescription: HomeTV uses motion data to control the Android TV with device tilt.
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.rexylin.hometv

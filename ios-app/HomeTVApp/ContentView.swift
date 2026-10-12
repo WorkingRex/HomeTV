@@ -1,8 +1,10 @@
 import SwiftUI
 
 struct ContentView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var discovery = TVDiscovery()
     @StateObject private var remote = TVRemoteClient()
+    @StateObject private var tilt = TiltRemoteController()
     @State private var status = "Not connected"
     @State private var selectedDevice: AndroidTVDevice?
     @State private var pairingCode = ""
@@ -15,7 +17,9 @@ struct ContentView: View {
         ScrollView {
             VStack(spacing: 20) {
                 connectionCard
+                    tiltControls
                 transportControls
+                navigationControls
                 directionPad
                 volumeControls
             }
@@ -23,11 +27,20 @@ struct ContentView: View {
         }
         .background(Color(uiColor: .systemGroupedBackground))
         .task {
+            tilt.onCommand = { command in
+                remote.send(command)
+            }
             guard !isPreview, discovery.state == .idle else { return }
             discovery.start()
         }
         .onChange(of: discovery.devices) { _, devices in
             restoreLastDevice(from: devices)
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            guard newPhase == .active else {
+                tilt.isEnabled = false
+                return
+            }
         }
     }
 
@@ -76,6 +89,7 @@ struct ContentView: View {
                 showPairingSheet = true
                 isConnectionExpanded = true
             case .resolving, .pairing, .connecting, .failed:
+                tilt.isEnabled = false
                 isConnectionExpanded = true
             case .idle:
                 break
@@ -221,6 +235,13 @@ struct ContentView: View {
         }
     }
 
+    private var navigationControls: some View {
+        HStack(spacing: 12) {
+            commandButton(.back)
+            commandButton(.home)
+        }
+    }
+
     private var directionPad: some View {
         VStack(spacing: 12) {
             commandButton(.up)
@@ -238,6 +259,64 @@ struct ContentView: View {
             commandButton(.volumeDown)
             commandButton(.mute)
             commandButton(.volumeUp)
+        }
+    }
+
+    private var tiltControls: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Toggle(isOn: $tilt.isEnabled) {
+                Label("Tilt controls", systemImage: "iphone")
+            }
+            .tint(.blue)
+            .disabled(remote.state != .connected || !tilt.isAvailable)
+
+            if tilt.isEnabled {
+                if let motionError = tilt.motionError {
+                    Text("Motion unavailable: \(motionError)")
+                        .font(.footnote)
+                        .foregroundStyle(.red)
+                } else if !tilt.hasMotionSample {
+                    ProgressView("Waiting for motion sensor…")
+                        .font(.footnote)
+                }
+
+                HStack {
+                    Label(
+                        tilt.isCalibrated
+                            ? "Center calibrated"
+                            : "Hold phone flat, top toward TV",
+                        systemImage: tilt.isCalibrated ? "checkmark.circle.fill" : "arrow.up.circle"
+                    )
+                    .font(.footnote)
+                    .foregroundStyle(tilt.isCalibrated ? .green : .secondary)
+
+                    Spacer()
+
+                    Button("Reset") {
+                        tilt.resetCalibration()
+                    }
+                    .buttonStyle(.bordered)
+                }
+
+                HStack(spacing: 8) {
+                    Button("Set center") {
+                        tilt.calibrateCenter()
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(!tilt.canCalibrate)
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Center: \(tilt.centerValue)")
+                    Text("Current: \(tilt.currentValue) · \(tilt.detectedDirection)")
+                }
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
+
+                Text("開啟 Tilt 後會自動設定中心；需要重新校正時再按 Set center。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 

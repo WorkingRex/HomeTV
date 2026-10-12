@@ -16,6 +16,7 @@
 		8126B82FA7F2C413C6BB852E /* TVDiscovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE1D0FEB165F3B9B69AB3D42 /* TVDiscovery.swift */; };
 		8C6CE2894FF123D1D58A0FCB /* RemoteProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADDEB91F5EE0634CA514EC9B /* RemoteProtocol.swift */; };
 		923BA57F150EA15606F17891 /* RemoteCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3307528376495DC51B9A1D1 /* RemoteCommand.swift */; };
+		B4AE6944A3F0B5B573021744 /* TiltRemoteController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86BBE6DA0D35B0F0CBCFF6FC /* TiltRemoteController.swift */; };
 		B648559B07740A98E627E73D /* TVIdentityStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2735F1CBC12041BD94FF8FE /* TVIdentityStoreTests.swift */; };
 		B7FC2416829DEE67B418A1CB /* X509 in Frameworks */ = {isa = PBXBuildFile; productRef = 3C1D3CF75B42035A91FF18DE /* X509 */; };
 		DB10F900867A292674EC6DA8 /* HomeTVAppTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC9D341E2A09839BBBEA5572 /* HomeTVAppTests.swift */; };
@@ -35,6 +36,7 @@
 /* Begin PBXFileReference section */
 		0F1B0FB2C3D8C1FA7A594BDD /* polo.pb.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = polo.pb.swift; sourceTree = "<group>"; };
 		1F148FC41DF3523617C46ECE /* HomeTVTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = HomeTVTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		86BBE6DA0D35B0F0CBCFF6FC /* TiltRemoteController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TiltRemoteController.swift; sourceTree = "<group>"; };
 		A3307528376495DC51B9A1D1 /* RemoteCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteCommand.swift; sourceTree = "<group>"; };
 		A3DA5A72C5BC7D3CD2C5E489 /* TVRemoteClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVRemoteClient.swift; sourceTree = "<group>"; };
 		A7944B99B39322E1EDB7A887 /* HomeTV.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HomeTV.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -103,6 +105,7 @@
 				AC807F0BFB0CF582B01CA22D /* HomeTVApp.swift */,
 				A3307528376495DC51B9A1D1 /* RemoteCommand.swift */,
 				ADDEB91F5EE0634CA514EC9B /* RemoteProtocol.swift */,
+				86BBE6DA0D35B0F0CBCFF6FC /* TiltRemoteController.swift */,
 				EE1D0FEB165F3B9B69AB3D42 /* TVDiscovery.swift */,
 				D9138DFE41093EE435B987D7 /* TVIdentityStore.swift */,
 				A3DA5A72C5BC7D3CD2C5E489 /* TVRemoteClient.swift */,
@@ -220,6 +223,7 @@
 				8126B82FA7F2C413C6BB852E /* TVDiscovery.swift in Sources */,
 				1A29D652F35D3CFEB19A18B1 /* TVIdentityStore.swift in Sources */,
 				3175A337B6837271F91605C9 /* TVRemoteClient.swift in Sources */,
+				B4AE6944A3F0B5B573021744 /* TiltRemoteController.swift in Sources */,
 				1221F171DFD788E8F8B7FC2D /* polo.pb.swift in Sources */,
 				339B1C37E355524673CC1C85 /* remotemessage.pb.swift in Sources */,
 			);

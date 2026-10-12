@@ -55,6 +55,8 @@ final class TVRemoteClient: ObservableObject {
     private var selectedDevice: AndroidTVDevice?
     private var pairingConnection: NWConnection?
     private var remoteConnection: NWConnection?
+    private var reconnectTask: Task<Void, Never>?
+    private var remoteReconnectAttempts = 0
     private var pairingDecoder = ProtobufFrameDecoder()
     private var remoteDecoder = ProtobufFrameDecoder()
 
@@ -126,6 +128,9 @@ final class TVRemoteClient: ObservableObject {
     }
 
     func stop() {
+        reconnectTask?.cancel()
+        reconnectTask = nil
+        remoteReconnectAttempts = 0
         cancel(pairingConnection)
         cancel(remoteConnection)
         pairingConnection = nil
@@ -226,17 +231,16 @@ final class TVRemoteClient: ObservableObject {
                 guard let self else { return }
                 if case .failed(let error) = state {
                     if self.shouldFallbackToPairing {
-                        self.shouldFallbackToPairing = false
-                        do {
-                            try self.openPairingConnection()
-                        } catch {
-                            self.state = .failed(error.localizedDescription)
-                        }
+                        self.remoteConnection = nil
+                        self.retryRemoteConnectionOrPair()
                     } else {
                         self.state = .failed(error.localizedDescription)
                     }
                 }
                 if case .ready = state {
+                    self.remoteReconnectAttempts = 0
+                    self.reconnectTask?.cancel()
+                    self.reconnectTask = nil
                     self.receive(on: connection, pairing: false)
                 }
             }
@@ -244,6 +248,35 @@ final class TVRemoteClient: ObservableObject {
         remoteConnection = connection
         state = .connecting
         connection.start(queue: networkQueue)
+    }
+
+    private func retryRemoteConnectionOrPair() {
+        guard remoteReconnectAttempts < 2 else {
+            shouldFallbackToPairing = false
+            do {
+                try openPairingConnection()
+            } catch {
+                state = .failed(error.localizedDescription)
+            }
+            return
+        }
+
+        remoteReconnectAttempts += 1
+        let delay = UInt64(remoteReconnectAttempts) * 500_000_000
+        reconnectTask = Task { [weak self] in
+            do {
+                try await Task.sleep(nanoseconds: delay)
+            } catch {
+                return
+            }
+
+            guard let self, self.shouldFallbackToPairing else { return }
+            do {
+                try self.openRemoteConnection()
+            } catch {
+                self.state = .failed(error.localizedDescription)
+            }
+        }
     }
 
     private func makeTLSParameters(identity: TVIdentity, serverNumbers: RSANumberBox) throws -> NWParameters {
