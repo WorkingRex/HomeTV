@@ -280,31 +280,14 @@ struct ContentView: View {
                         .font(.footnote)
                 }
 
-                HStack {
-                    Label(
-                        tilt.isCalibrated
-                            ? "Center calibrated"
-                            : "Hold phone flat, top toward TV",
-                        systemImage: tilt.isCalibrated ? "checkmark.circle.fill" : "arrow.up.circle"
-                    )
-                    .font(.footnote)
-                    .foregroundStyle(tilt.isCalibrated ? .green : .secondary)
-
-                    Spacer()
-
-                    Button("Reset") {
-                        tilt.resetCalibration()
-                    }
-                    .buttonStyle(.bordered)
-                }
-
-                HStack(spacing: 8) {
-                    Button("Set center") {
-                        tilt.calibrateCenter()
-                    }
-                    .buttonStyle(.bordered)
-                    .disabled(!tilt.canCalibrate)
-                }
+                Label(
+                    tilt.isCalibrated
+                        ? "Center calibrated"
+                        : "Hold phone flat, top toward TV",
+                    systemImage: tilt.isCalibrated ? "checkmark.circle.fill" : "arrow.up.circle"
+                )
+                .font(.footnote)
+                .foregroundStyle(tilt.isCalibrated ? .green : .secondary)
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Center: \(tilt.centerValue)")
@@ -313,7 +296,7 @@ struct ContentView: View {
                 .font(.caption.monospacedDigit())
                 .foregroundStyle(.secondary)
 
-                Text("開啟 Tilt 後會自動設定中心；需要重新校正時再按 Set center。")
+                Text("開啟 Tilt 後會自動設定中心。")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
