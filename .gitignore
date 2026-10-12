@@ -2,3 +2,6 @@
 __pycache__/
 .env
 data/*.pem
+ios-app/.build/
+.DS_Store
+**/xcuserdata/

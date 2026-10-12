@@ -1,0 +1,493 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		1221F171DFD788E8F8B7FC2D /* polo.pb.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F1B0FB2C3D8C1FA7A594BDD /* polo.pb.swift */; };
+		1A29D652F35D3CFEB19A18B1 /* TVIdentityStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9138DFE41093EE435B987D7 /* TVIdentityStore.swift */; };
+		3175A337B6837271F91605C9 /* TVRemoteClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DA5A72C5BC7D3CD2C5E489 /* TVRemoteClient.swift */; };
+		339B1C37E355524673CC1C85 /* remotemessage.pb.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA4C5F01190E0D6A24D4F46E /* remotemessage.pb.swift */; };
+		4C13F838800CE1E0A2268E76 /* HomeTVApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC807F0BFB0CF582B01CA22D /* HomeTVApp.swift */; };
+		5758DFB5C0F928DE30ECD396 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3A2FF4E1B1FCC2442D5764B /* ContentView.swift */; };
+		8126B82FA7F2C413C6BB852E /* TVDiscovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE1D0FEB165F3B9B69AB3D42 /* TVDiscovery.swift */; };
+		8C6CE2894FF123D1D58A0FCB /* RemoteProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADDEB91F5EE0634CA514EC9B /* RemoteProtocol.swift */; };
+		923BA57F150EA15606F17891 /* RemoteCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3307528376495DC51B9A1D1 /* RemoteCommand.swift */; };
+		B648559B07740A98E627E73D /* TVIdentityStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2735F1CBC12041BD94FF8FE /* TVIdentityStoreTests.swift */; };
+		B7FC2416829DEE67B418A1CB /* X509 in Frameworks */ = {isa = PBXBuildFile; productRef = 3C1D3CF75B42035A91FF18DE /* X509 */; };
+		DB10F900867A292674EC6DA8 /* HomeTVAppTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC9D341E2A09839BBBEA5572 /* HomeTVAppTests.swift */; };
+		F2F621FA636F48DC3F8AA4F7 /* SwiftProtobuf in Frameworks */ = {isa = PBXBuildFile; productRef = 4FC883059FF1A5751C7175B5 /* SwiftProtobuf */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		DC45F0A1F546B3ACC64B8F46 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F860B273C6792DDF074E719F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = DE42B9F9D6E27FC110D8FC35;
+			remoteInfo = HomeTV;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		0F1B0FB2C3D8C1FA7A594BDD /* polo.pb.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = polo.pb.swift; sourceTree = "<group>"; };
+		1F148FC41DF3523617C46ECE /* HomeTVTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = HomeTVTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A3307528376495DC51B9A1D1 /* RemoteCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteCommand.swift; sourceTree = "<group>"; };
+		A3DA5A72C5BC7D3CD2C5E489 /* TVRemoteClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVRemoteClient.swift; sourceTree = "<group>"; };
+		A7944B99B39322E1EDB7A887 /* HomeTV.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HomeTV.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AC807F0BFB0CF582B01CA22D /* HomeTVApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeTVApp.swift; sourceTree = "<group>"; };
+		ADDEB91F5EE0634CA514EC9B /* RemoteProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteProtocol.swift; sourceTree = "<group>"; };
+		B2735F1CBC12041BD94FF8FE /* TVIdentityStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVIdentityStoreTests.swift; sourceTree = "<group>"; };
+		B3A2FF4E1B1FCC2442D5764B /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		CA4C5F01190E0D6A24D4F46E /* remotemessage.pb.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = remotemessage.pb.swift; sourceTree = "<group>"; };
+		D9138DFE41093EE435B987D7 /* TVIdentityStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVIdentityStore.swift; sourceTree = "<group>"; };
+		EE1D0FEB165F3B9B69AB3D42 /* TVDiscovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVDiscovery.swift; sourceTree = "<group>"; };
+		FC9D341E2A09839BBBEA5572 /* HomeTVAppTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeTVAppTests.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		7EBFFDAECBBD3D72BBCF2F1B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F2F621FA636F48DC3F8AA4F7 /* SwiftProtobuf in Frameworks */,
+				B7FC2416829DEE67B418A1CB /* X509 in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		052AB486DA93A5D9BE73FB07 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A7944B99B39322E1EDB7A887 /* HomeTV.app */,
+				1F148FC41DF3523617C46ECE /* HomeTVTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		124AD7D1DA287C0732428171 /* Protos */ = {
+			isa = PBXGroup;
+			children = (
+				0F1B0FB2C3D8C1FA7A594BDD /* polo.pb.swift */,
+				CA4C5F01190E0D6A24D4F46E /* remotemessage.pb.swift */,
+			);
+			path = Protos;
+			sourceTree = "<group>";
+		};
+		71FF0ABCDED87F942FFF1AC5 /* Generated */ = {
+			isa = PBXGroup;
+			children = (
+				124AD7D1DA287C0732428171 /* Protos */,
+			);
+			path = Generated;
+			sourceTree = "<group>";
+		};
+		8B542F274F5B5498F292CC8E /* HomeTVAppTests */ = {
+			isa = PBXGroup;
+			children = (
+				FC9D341E2A09839BBBEA5572 /* HomeTVAppTests.swift */,
+				B2735F1CBC12041BD94FF8FE /* TVIdentityStoreTests.swift */,
+			);
+			path = HomeTVAppTests;
+			sourceTree = "<group>";
+		};
+		9F4AED43282D01F37DF9559D /* HomeTVApp */ = {
+			isa = PBXGroup;
+			children = (
+				B3A2FF4E1B1FCC2442D5764B /* ContentView.swift */,
+				AC807F0BFB0CF582B01CA22D /* HomeTVApp.swift */,
+				A3307528376495DC51B9A1D1 /* RemoteCommand.swift */,
+				ADDEB91F5EE0634CA514EC9B /* RemoteProtocol.swift */,
+				EE1D0FEB165F3B9B69AB3D42 /* TVDiscovery.swift */,
+				D9138DFE41093EE435B987D7 /* TVIdentityStore.swift */,
+				A3DA5A72C5BC7D3CD2C5E489 /* TVRemoteClient.swift */,
+				71FF0ABCDED87F942FFF1AC5 /* Generated */,
+			);
+			path = HomeTVApp;
+			sourceTree = "<group>";
+		};
+		F584692D44468B6F64263887 = {
+			isa = PBXGroup;
+			children = (
+				9F4AED43282D01F37DF9559D /* HomeTVApp */,
+				8B542F274F5B5498F292CC8E /* HomeTVAppTests */,
+				052AB486DA93A5D9BE73FB07 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		25E4DED47681A00B53B40C31 /* HomeTVTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DC78FD38F108FD5395E08B23 /* Build configuration list for PBXNativeTarget "HomeTVTests" */;
+			buildPhases = (
+				5563B1D4B30F26C61C55C56F /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				B2249F8E41C957682B3A0B10 /* PBXTargetDependency */,
+			);
+			name = HomeTVTests;
+			packageProductDependencies = (
+			);
+			productName = HomeTVTests;
+			productReference = 1F148FC41DF3523617C46ECE /* HomeTVTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		DE42B9F9D6E27FC110D8FC35 /* HomeTV */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 100DAD1C8AA155BFD3FE91DD /* Build configuration list for PBXNativeTarget "HomeTV" */;
+			buildPhases = (
+				55B3AA7EE5170AAA6E92DE69 /* Sources */,
+				7EBFFDAECBBD3D72BBCF2F1B /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = HomeTV;
+			packageProductDependencies = (
+				4FC883059FF1A5751C7175B5 /* SwiftProtobuf */,
+				3C1D3CF75B42035A91FF18DE /* X509 */,
+			);
+			productName = HomeTV;
+			productReference = A7944B99B39322E1EDB7A887 /* HomeTV.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		F860B273C6792DDF074E719F /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 2700;
+				TargetAttributes = {
+					DE42B9F9D6E27FC110D8FC35 = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 8522756EEE0E4385306A9A41 /* Build configuration list for PBXProject "HomeTV" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = F584692D44468B6F64263887;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				656EAA2D506C3B5B8F2C159E /* XCRemoteSwiftPackageReference "swift-certificates" */,
+				ED19242F57E4916740375EC9 /* XCRemoteSwiftPackageReference "swift-protobuf" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 052AB486DA93A5D9BE73FB07 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				DE42B9F9D6E27FC110D8FC35 /* HomeTV */,
+				25E4DED47681A00B53B40C31 /* HomeTVTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		5563B1D4B30F26C61C55C56F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DB10F900867A292674EC6DA8 /* HomeTVAppTests.swift in Sources */,
+				B648559B07740A98E627E73D /* TVIdentityStoreTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		55B3AA7EE5170AAA6E92DE69 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5758DFB5C0F928DE30ECD396 /* ContentView.swift in Sources */,
+				4C13F838800CE1E0A2268E76 /* HomeTVApp.swift in Sources */,
+				923BA57F150EA15606F17891 /* RemoteCommand.swift in Sources */,
+				8C6CE2894FF123D1D58A0FCB /* RemoteProtocol.swift in Sources */,
+				8126B82FA7F2C413C6BB852E /* TVDiscovery.swift in Sources */,
+				1A29D652F35D3CFEB19A18B1 /* TVIdentityStore.swift in Sources */,
+				3175A337B6837271F91605C9 /* TVRemoteClient.swift in Sources */,
+				1221F171DFD788E8F8B7FC2D /* polo.pb.swift in Sources */,
+				339B1C37E355524673CC1C85 /* remotemessage.pb.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		B2249F8E41C957682B3A0B10 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = DE42B9F9D6E27FC110D8FC35 /* HomeTV */;
+			targetProxy = DC45F0A1F546B3ACC64B8F46 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		0EB8FA7E6E075DB115029F0D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_LANGUAGE = "zh-Hant";
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		261469214EA6840E82260E90 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.rexylin.hometv.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/HomeTV.app/HomeTV";
+			};
+			name = Release;
+		};
+		879BBC9F944C82C69FBC4BE7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_LANGUAGE = "zh-Hant";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		96C9D9D260464055013145AF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = S6DBG86B3R;
+				INFOPLIST_FILE = HomeTVApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.rexylin.hometv;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		9A408E8BE4D1229716548148 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.rexylin.hometv.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/HomeTV.app/HomeTV";
+			};
+			name = Debug;
+		};
+		FAFB96D9C63F1269DD1124F6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = S6DBG86B3R;
+				INFOPLIST_FILE = HomeTVApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.rexylin.hometv;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		100DAD1C8AA155BFD3FE91DD /* Build configuration list for PBXNativeTarget "HomeTV" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				96C9D9D260464055013145AF /* Debug */,
+				FAFB96D9C63F1269DD1124F6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		8522756EEE0E4385306A9A41 /* Build configuration list for PBXProject "HomeTV" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0EB8FA7E6E075DB115029F0D /* Debug */,
+				879BBC9F944C82C69FBC4BE7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		DC78FD38F108FD5395E08B23 /* Build configuration list for PBXNativeTarget "HomeTVTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9A408E8BE4D1229716548148 /* Debug */,
+				261469214EA6840E82260E90 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		656EAA2D506C3B5B8F2C159E /* XCRemoteSwiftPackageReference "swift-certificates" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-certificates.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.21.0;
+			};
+		};
+		ED19242F57E4916740375EC9 /* XCRemoteSwiftPackageReference "swift-protobuf" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-protobuf.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.38.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		3C1D3CF75B42035A91FF18DE /* X509 */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 656EAA2D506C3B5B8F2C159E /* XCRemoteSwiftPackageReference "swift-certificates" */;
+			productName = X509;
+		};
+		4FC883059FF1A5751C7175B5 /* SwiftProtobuf */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = ED19242F57E4916740375EC9 /* XCRemoteSwiftPackageReference "swift-protobuf" */;
+			productName = SwiftProtobuf;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = F860B273C6792DDF074E719F /* Project object */;
+}
