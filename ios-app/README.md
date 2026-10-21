@@ -20,4 +20,19 @@ xcodebuild \
   test
 ```
 
-The current screen is a UI scaffold. Android TV discovery, pairing, TLS, Keychain storage, and command transport are the next implementation layer.
+The app supports Android TV discovery, pairing, and remote commands. The power
+button next to Back and Home sends the Android TV POWER toggle command while
+connected. Waking the TV from standby depends on the TV keeping its network and
+remote service available; the app cannot wake a fully powered-off TV.
+
+## Direction control modes
+
+Use the fixed bottom selector to switch between direction buttons, Tilt, and
+joystick controls. The active direction control panel sits directly above the
+selector in the same fixed bottom area, separate from the scrolling remote buttons.
+Tilt automatically calibrates on entry and stops when leaving
+the mode or the app. It requires a physical device with motion sensors.
+Drag the joystick to send four-direction key presses; moving farther from center
+increases repeat speed, and releasing stops immediately. Tilt and joystick modes
+each retain an OK button. Leaving the app or losing the connection resets the
+mode to direction buttons and stops continuous input.

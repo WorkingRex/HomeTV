@@ -5,6 +5,7 @@ struct ContentView: View {
     @StateObject private var discovery = TVDiscovery()
     @StateObject private var remote = TVRemoteClient()
     @StateObject private var tilt = TiltRemoteController()
+    @State private var controlMode = ControlMode.buttons
     @State private var status = "Not connected"
     @State private var selectedDevice: AndroidTVDevice?
     @State private var pairingCode = ""
@@ -17,15 +18,31 @@ struct ContentView: View {
         ScrollView {
             VStack(spacing: 20) {
                 connectionCard
-                    tiltControls
                 transportControls
                 navigationControls
-                directionPad
                 volumeControls
             }
             .padding()
         }
         .background(Color(uiColor: .systemGroupedBackground))
+        .safeAreaInset(edge: .bottom) {
+            VStack(spacing: 16) {
+                directionControls
+
+                Picker("控制模式", selection: $controlMode) {
+                    ForEach(ControlMode.allCases) { mode in
+                        Text(mode.rawValue).tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .disabled(remote.state != .connected)
+            }
+            .padding()
+            .background(.bar)
+        }
+        .onChange(of: controlMode) { _, mode in
+            tilt.isEnabled = mode == .tilt && scenePhase == .active && remote.state == .connected
+        }
         .task {
             tilt.onCommand = { command in
                 remote.send(command)
@@ -39,8 +56,13 @@ struct ContentView: View {
         .onChange(of: scenePhase) { _, newPhase in
             guard newPhase == .active else {
                 tilt.isEnabled = false
+                controlMode = .buttons
                 return
             }
+        }
+        .onDisappear {
+            tilt.isEnabled = false
+            controlMode = .buttons
         }
     }
 
@@ -80,6 +102,10 @@ struct ContentView: View {
             }
         }
         .onChange(of: remote.state) { _, newState in
+            if newState != .connected {
+                controlMode = .buttons
+                tilt.isEnabled = false
+            }
             switch newState {
             case .connected:
                 showPairingSheet = false
@@ -239,6 +265,7 @@ struct ContentView: View {
         HStack(spacing: 12) {
             commandButton(.back)
             commandButton(.home)
+            commandButton(.power)
         }
     }
 
@@ -250,7 +277,28 @@ struct ContentView: View {
                 commandButton(.select)
                 commandButton(.right)
             }
+
             commandButton(.down)
+        }
+    }
+
+    @ViewBuilder
+    private var directionControls: some View {
+        switch controlMode {
+        case .buttons:
+            directionPad
+        case .tilt:
+            VStack(spacing: 12) {
+                tiltControls
+                commandButton(.select)
+            }
+        case .joystick:
+            VStack(spacing: 12) {
+                JoystickControl(isActive: remote.state == .connected && scenePhase == .active) {
+                    remote.send($0)
+                }
+                commandButton(.select)
+            }
         }
     }
 
@@ -264,18 +312,23 @@ struct ContentView: View {
 
     private var tiltControls: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Toggle(isOn: $tilt.isEnabled) {
-                Label("Tilt controls", systemImage: "iphone")
+            Label("Tilt controls", systemImage: "iphone")
+                .font(.headline)
+
+            if !tilt.isAvailable {
+                Text("此裝置不支援動作感測，請使用方向鍵或搖桿。")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
-            .tint(.blue)
-            .disabled(remote.state != .connected || !tilt.isAvailable)
+
+            if let motionError = tilt.motionError {
+                Text("Motion unavailable: \(motionError)")
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+            }
 
             if tilt.isEnabled {
-                if let motionError = tilt.motionError {
-                    Text("Motion unavailable: \(motionError)")
-                        .font(.footnote)
-                        .foregroundStyle(.red)
-                } else if !tilt.hasMotionSample {
+                if !tilt.hasMotionSample {
                     ProgressView("Waiting for motion sensor…")
                         .font(.footnote)
                 }
@@ -296,7 +349,7 @@ struct ContentView: View {
                 .font(.caption.monospacedDigit())
                 .foregroundStyle(.secondary)
 
-                Text("開啟 Tilt 後會自動設定中心。")
+                Text("切換至 Tilt 時會自動設定中心。切換其他模式後再回來即可重新校正。")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -319,6 +372,96 @@ struct ContentView: View {
         .buttonStyle(.bordered)
         .accessibilityLabel(command.rawValue)
         .disabled(remote.state != .connected)
+    }
+}
+
+private enum ControlMode: String, CaseIterable, Identifiable {
+    case buttons = "方向鍵"
+    case tilt = "Tilt"
+    case joystick = "搖桿"
+
+    var id: String { rawValue }
+}
+
+private struct JoystickControl: View {
+    let isActive: Bool
+    let onCommand: (RemoteCommand) -> Void
+    @State private var offset = CGSize.zero
+    @State private var input: JoystickInput?
+    private let radius: CGFloat = 80
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Text("拖曳搖桿，離中心越遠連發越快；放手停止。")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
+            ZStack {
+                Circle()
+                    .fill(.quaternary)
+                Image(systemName: "arrow.up.and.down.and.arrow.left.and.right")
+                    .font(.largeTitle)
+                    .foregroundStyle(.secondary)
+                Circle()
+                    .fill(Color.accentColor)
+                    .frame(width: 64, height: 64)
+                    .offset(offset)
+            }
+            .frame(width: 224, height: 224)
+            .contentShape(Circle())
+            .highPriorityGesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { value in
+                        guard isActive else { return }
+                        let distance = hypot(value.translation.width, value.translation.height)
+                        let scale = distance > radius ? radius / distance : 1
+                        offset = CGSize(
+                            width: value.translation.width * scale,
+                            height: value.translation.height * scale
+                        )
+                        input = JoystickInput(
+                            x: Double(offset.width / radius),
+                            y: Double(offset.height / radius)
+                        )
+                    }
+                    .onEnded { _ in stop() }
+            )
+            .accessibilityLabel("方向搖桿")
+            .accessibilityValue(input?.command.rawValue ?? "Center")
+        }
+        .disabled(!isActive)
+        .task(id: input != nil && isActive) {
+            guard isActive, input != nil else { return }
+            let clock = ContinuousClock()
+            var lastSentAt: ContinuousClock.Instant?
+            var lastCommand: RemoteCommand?
+            while !Task.isCancelled, isActive, let input {
+                let now = clock.now
+                if lastCommand != input.command ||
+                    lastSentAt.map({ $0.duration(to: now) >= .seconds(input.repeatInterval) }) != false {
+                    onCommand(input.command)
+                    lastCommand = input.command
+                    lastSentAt = now
+                }
+                do {
+                    try await Task.sleep(for: .milliseconds(20))
+                } catch is CancellationError {
+                    return
+                } catch {
+                    assertionFailure("Unexpected joystick timer error: \(error)")
+                    return
+                }
+            }
+        }
+        .onChange(of: isActive) { _, active in
+            if !active { stop() }
+        }
+        .onDisappear(perform: stop)
+    }
+
+    private func stop() {
+        input = nil
+        offset = .zero
     }
 }
 

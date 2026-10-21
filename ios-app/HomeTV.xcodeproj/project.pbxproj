@@ -35,7 +35,7 @@
 
 /* Begin PBXFileReference section */
 		0F1B0FB2C3D8C1FA7A594BDD /* polo.pb.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = polo.pb.swift; sourceTree = "<group>"; };
-		1F148FC41DF3523617C46ECE /* HomeTVTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = HomeTVTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		1F148FC41DF3523617C46ECE /* HomeTVTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HomeTVTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		86BBE6DA0D35B0F0CBCFF6FC /* TiltRemoteController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TiltRemoteController.swift; sourceTree = "<group>"; };
 		A3307528376495DC51B9A1D1 /* RemoteCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteCommand.swift; sourceTree = "<group>"; };
 		A3DA5A72C5BC7D3CD2C5E489 /* TVRemoteClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVRemoteClient.swift; sourceTree = "<group>"; };
@@ -171,7 +171,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastUpgradeCheck = 2700;
+				LastUpgradeCheck = 2710;
 				TargetAttributes = {
 					DE42B9F9D6E27FC110D8FC35 = {
 						ProvisioningStyle = Automatic;
@@ -278,6 +278,7 @@
 				DEVELOPMENT_LANGUAGE = "zh-Hant";
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -298,6 +299,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 6.0;
@@ -358,6 +360,7 @@
 				DEVELOPMENT_LANGUAGE = "zh-Hant";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -371,6 +374,7 @@
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 6.0;

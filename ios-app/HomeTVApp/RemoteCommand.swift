@@ -1,5 +1,25 @@
 import Foundation
 
+struct JoystickInput: Equatable {
+    let command: RemoteCommand
+    let repeatInterval: TimeInterval
+
+    init?(x: Double, y: Double) {
+        guard x.isFinite, y.isFinite else { return nil }
+        let magnitude = min(1, hypot(x, y))
+        let deadZone = 0.18
+        guard magnitude > deadZone else { return nil }
+
+        if abs(x) >= abs(y) {
+            command = x >= 0 ? .right : .left
+        } else {
+            command = y >= 0 ? .down : .up
+        }
+        let intensity = (magnitude - deadZone) / (1 - deadZone)
+        repeatInterval = 0.48 - intensity * 0.38
+    }
+}
+
 enum RemoteCommand: String, CaseIterable, Identifiable {
     case power
     case back

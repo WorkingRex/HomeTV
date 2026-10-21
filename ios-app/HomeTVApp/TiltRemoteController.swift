@@ -66,7 +66,7 @@ final class TiltRemoteController: ObservableObject {
         motionManager.deviceMotionUpdateInterval = 0.1
         motionManager.startDeviceMotionUpdates(using: .xArbitraryZVertical, to: .main) { [weak self] motion, error in
             Task { @MainActor in
-                guard let self else { return }
+                guard let self, self.isEnabled else { return }
                 if let error {
                     self.motionError = error.localizedDescription
                     self.isEnabled = false

@@ -25,6 +25,20 @@ final class HomeTVAppTests: XCTestCase {
         XCTAssertEqual(try Remote_RemoteMessage(serializedBytes: framed.dropFirst()), message)
     }
 
+    func testPowerMessageUsesPowerToggleKeyCode() throws {
+        let message = RemoteMessageFactory.key(.power)
+        XCTAssertEqual(RemoteCommand.power.androidTVKeyCode, "POWER")
+        XCTAssertEqual(message.remoteKeyInject.keyCode.rawValue, 26)
+        XCTAssertEqual(message.remoteKeyInject.direction, .short)
+
+        let framed = try ProtobufFrameCodec.frame(message)
+        var decoder = ProtobufFrameDecoder()
+        let frames = try decoder.append(framed)
+        XCTAssertEqual(frames.count, 1)
+        let payload = try XCTUnwrap(frames.first)
+        XCTAssertEqual(try Remote_RemoteMessage(serializedBytes: payload), message)
+    }
+
     func testFrameDecoderHandlesSplitFrames() throws {
         let first = try ProtobufFrameCodec.frame(RemoteMessageFactory.key(.back))
         let second = try ProtobufFrameCodec.frame(RemoteMessageFactory.launchApp(uri: "https://www.youtube.com"))
@@ -48,6 +62,27 @@ final class HomeTVAppTests: XCTestCase {
         XCTAssertThrowsError(try RemoteMessageFactory.text("")) { error in
             XCTAssertEqual(error as? RemoteProtocolError, .emptyText)
         }
+    }
+
+    func testJoystickDeadZoneAndDirections() {
+        XCTAssertNil(JoystickInput(x: 0, y: 0))
+        XCTAssertNil(JoystickInput(x: 0.18, y: 0))
+        XCTAssertNil(JoystickInput(x: .nan, y: 0))
+        XCTAssertEqual(JoystickInput(x: 0.19, y: 0)?.command, .right)
+        XCTAssertEqual(JoystickInput(x: -0.6, y: 0.2)?.command, .left)
+        XCTAssertEqual(JoystickInput(x: 0.2, y: -0.6)?.command, .up)
+        XCTAssertEqual(JoystickInput(x: 0, y: 1)?.command, .down)
+    }
+
+    func testJoystickRepeatsFasterAwayFromCenter() throws {
+        let nearCenter = try XCTUnwrap(JoystickInput(x: 0.2, y: 0))
+        let middle = try XCTUnwrap(JoystickInput(x: 0.6, y: 0))
+        let edge = try XCTUnwrap(JoystickInput(x: 1, y: 0))
+        XCTAssertGreaterThan(nearCenter.repeatInterval, middle.repeatInterval)
+        XCTAssertGreaterThan(middle.repeatInterval, edge.repeatInterval)
+        XCTAssertEqual(edge.repeatInterval, 0.1, accuracy: 0.0001)
+        XCTAssertLessThanOrEqual(nearCenter.repeatInterval, 0.48)
+        XCTAssertEqual(JoystickInput(x: 2, y: 0)?.repeatInterval, edge.repeatInterval)
     }
 
     func testAndroidTVServiceResultBecomesDevice() {
