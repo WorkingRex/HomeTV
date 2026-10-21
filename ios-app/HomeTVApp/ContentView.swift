@@ -2,10 +2,12 @@ import SwiftUI
 
 struct ContentView: View {
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     @StateObject private var discovery = TVDiscovery()
     @StateObject private var remote = TVRemoteClient()
     @StateObject private var tilt = TiltRemoteController()
     @State private var controlMode = ControlMode.buttons
+    @State private var isHintPopoverPresented = false
     @State private var status = "Not connected"
     @State private var selectedDevice: AndroidTVDevice?
     @State private var pairingCode = ""
@@ -18,30 +20,46 @@ struct ContentView: View {
         ScrollView {
             VStack(spacing: 20) {
                 connectionCard
-                transportControls
                 navigationControls
                 volumeControls
+                transportControls
             }
             .padding()
         }
         .background(Color(uiColor: .systemGroupedBackground))
-        .safeAreaInset(edge: .bottom) {
-            VStack(spacing: 16) {
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            VStack(spacing: verticalSizeClass == .compact ? 8 : 16) {
                 directionControls
 
-                Picker("控制模式", selection: $controlMode) {
-                    ForEach(ControlMode.allCases) { mode in
-                        Text(mode.rawValue).tag(mode)
+                HStack(spacing: 10) {
+                    Picker("控制模式", selection: $controlMode) {
+                        ForEach(ControlMode.allCases) { mode in
+                            Text(mode.rawValue).tag(mode)
+                        }
                     }
+                    .pickerStyle(.segmented)
+                    .disabled(remote.state != .connected)
+
+                    hintButton
                 }
-                .pickerStyle(.segmented)
-                .disabled(remote.state != .connected)
             }
-            .padding()
+            .padding(verticalSizeClass == .compact ? 8 : 16)
             .background(.bar)
+            .overlay(alignment: .bottomTrailing) {
+                if isHintPopoverPresented {
+                    hintPopover
+                        .padding(.trailing, 52)
+                        .padding(.bottom, 60)
+                        .transition(.opacity.combined(with: .move(edge: .bottom)))
+                        .zIndex(1)
+                }
+            }
         }
         .onChange(of: controlMode) { _, mode in
             tilt.isEnabled = mode == .tilt && scenePhase == .active && remote.state == .connected
+        }
+        .onChange(of: remote.reportedApp) { _, _ in
+            isHintPopoverPresented = false
         }
         .task {
             tilt.onCommand = { command in
@@ -254,6 +272,14 @@ struct ContentView: View {
     }
 
     private var transportControls: some View {
+        Group {
+            if remote.reportedApp?.showsPlaybackControls == true {
+                playbackButtons
+            }
+        }
+    }
+
+    private var playbackButtons: some View {
         HStack(spacing: 12) {
             commandButton(.rewind)
             commandButton(.playPause)
@@ -294,9 +320,11 @@ struct ContentView: View {
             }
         case .joystick:
             VStack(spacing: 12) {
-                JoystickControl(isActive: remote.state == .connected && scenePhase == .active) {
-                    remote.send($0)
-                }
+                JoystickControl(
+                    isActive: remote.state == .connected && scenePhase == .active,
+                    onCommand: { remote.send($0) },
+                    diameter: verticalSizeClass == .compact ? 144 : 224
+                )
                 commandButton(.select)
             }
         }
@@ -315,45 +343,101 @@ struct ContentView: View {
             Label("Tilt controls", systemImage: "iphone")
                 .font(.headline)
 
-            if !tilt.isAvailable {
-                Text("此裝置不支援動作感測，請使用方向鍵或搖桿。")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-
-            if let motionError = tilt.motionError {
-                Text("Motion unavailable: \(motionError)")
-                    .font(.footnote)
-                    .foregroundStyle(.red)
-            }
-
             if tilt.isEnabled {
-                if !tilt.hasMotionSample {
-                    ProgressView("Waiting for motion sensor…")
-                        .font(.footnote)
-                }
-
                 Label(
-                    tilt.isCalibrated
-                        ? "Center calibrated"
-                        : "Hold phone flat, top toward TV",
+                    tilt.hasMotionSample ? tilt.detectedDirection : "等待感測器",
                     systemImage: tilt.isCalibrated ? "checkmark.circle.fill" : "arrow.up.circle"
                 )
-                .font(.footnote)
-                .foregroundStyle(tilt.isCalibrated ? .green : .secondary)
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Center: \(tilt.centerValue)")
-                    Text("Current: \(tilt.currentValue) · \(tilt.detectedDirection)")
-                }
-                .font(.caption.monospacedDigit())
-                .foregroundStyle(.secondary)
-
-                Text("切換至 Tilt 時會自動設定中心。切換其他模式後再回來即可重新校正。")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
         }
+    }
+
+    private var hintButton: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.18)) {
+                isHintPopoverPresented.toggle()
+            }
+        } label: {
+            Image(systemName: "info.circle")
+                .font(.title3)
+                .padding(10)
+                .background(.regularMaterial, in: Circle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("提示與診斷")
+    }
+
+    private var hintPopover: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("提示與狀態")
+                        .font(.headline)
+                    Spacer()
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.18)) {
+                            isHintPopoverPresented = false
+                        }
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("關閉提示")
+                }
+
+                Divider()
+
+                Label(
+                    "目前 App：\(remote.reportedApp?.displayName ?? "尚未辨識")",
+                    systemImage: remote.reportedApp?.showsPlaybackControls == true ? "play.fill" : "tv"
+                )
+
+                if remote.supportsAppReporting == false {
+                    Text("電視未回報 App 資訊，因此不會自動顯示 App 專屬播放鍵。")
+                        .foregroundStyle(.secondary)
+                } else if remote.reportedApp == nil {
+                    Text("辨識到 YouTube 或 Netflix 時，播放控制會自動顯示。")
+                        .foregroundStyle(.secondary)
+                }
+
+                if controlMode == .tilt {
+                    Divider()
+                    if !tilt.isAvailable {
+                        Text("此裝置不支援動作感測，請切換至方向鍵或搖桿。")
+                            .foregroundStyle(.secondary)
+                    } else if let motionError = tilt.motionError {
+                        Text("Motion unavailable: \(motionError)")
+                            .foregroundStyle(.red)
+                    } else if !tilt.hasMotionSample {
+                        Text("正在等待動作感測器資料。")
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text(tilt.isCalibrated ? "Tilt 中心已校正。" : "保持手機平放、頂端朝向電視。")
+                            .foregroundStyle(.secondary)
+                        Text("中心：\(tilt.centerValue)\n目前：\(tilt.currentValue) · \(tilt.detectedDirection)")
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                        Text("切換至 Tilt 時會自動設定中心。")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .font(.subheadline)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(14)
+        }
+        .frame(maxWidth: 300, maxHeight: verticalSizeClass == .compact ? 160 : 260)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .overlay {
+            RoundedRectangle(cornerRadius: 16)
+                .strokeBorder(.quaternary, lineWidth: 1)
+        }
+        .shadow(color: .black.opacity(0.16), radius: 14, y: 5)
+        .padding(.leading, 12)
     }
 
     private func commandButton(_ command: RemoteCommand) -> some View {
@@ -386,15 +470,19 @@ private enum ControlMode: String, CaseIterable, Identifiable {
 private struct JoystickControl: View {
     let isActive: Bool
     let onCommand: (RemoteCommand) -> Void
+    let diameter: CGFloat
     @State private var offset = CGSize.zero
     @State private var input: JoystickInput?
-    private let radius: CGFloat = 80
+
+    private var radius: CGFloat { diameter * 0.36 }
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 8) {
             Text("拖曳搖桿，離中心越遠連發越快；放手停止。")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
 
             ZStack {
                 Circle()
@@ -404,10 +492,10 @@ private struct JoystickControl: View {
                     .foregroundStyle(.secondary)
                 Circle()
                     .fill(Color.accentColor)
-                    .frame(width: 64, height: 64)
+                    .frame(width: min(64, diameter * 0.3), height: min(64, diameter * 0.3))
                     .offset(offset)
             }
-            .frame(width: 224, height: 224)
+            .frame(width: diameter, height: diameter)
             .contentShape(Circle())
             .highPriorityGesture(
                 DragGesture(minimumDistance: 0)

@@ -2,6 +2,7 @@ import Combine
 import Crypto
 import Foundation
 import Network
+import OSLog
 import Security
 import SwiftProtobuf
 
@@ -44,7 +45,15 @@ private func configureTLSVerification(
 
 @MainActor
 final class TVRemoteClient: ObservableObject {
-    @Published private(set) var state: TVRemoteState = .idle
+    @Published private(set) var state: TVRemoteState = .idle {
+        didSet {
+            if state != .connected {
+                reportedApp = nil
+            }
+        }
+    }
+    @Published private(set) var reportedApp: ReportedTVApp?
+    @Published private(set) var supportsAppReporting: Bool?
 
     private let identityStore = TVIdentityStore()
     private let networkQueue = DispatchQueue(label: "com.rexylin.hometv.network")
@@ -59,6 +68,8 @@ final class TVRemoteClient: ObservableObject {
     private var remoteReconnectAttempts = 0
     private var pairingDecoder = ProtobufFrameDecoder()
     private var remoteDecoder = ProtobufFrameDecoder()
+    private var remoteHandshake = RemoteHandshake()
+    private let logger = Logger(subsystem: "com.rexylin.hometv", category: "RemoteSession")
 
     func canReconnect(to device: AndroidTVDevice) -> Bool {
         identityStore.hasStoredIdentity() && identityStore.isPaired(for: device.id)
@@ -103,6 +114,7 @@ final class TVRemoteClient: ObservableObject {
     func send(_ command: RemoteCommand) {
         guard state == .connected else { return }
         do {
+            logger.debug("Sending remote key: \(command.androidTVKeyCode, privacy: .public)")
             try send(RemoteMessageFactory.key(command), through: remoteConnection)
         } catch {
             state = .failed(error.localizedDescription)
@@ -137,6 +149,8 @@ final class TVRemoteClient: ObservableObject {
         remoteConnection = nil
         pairingDecoder = ProtobufFrameDecoder()
         remoteDecoder = ProtobufFrameDecoder()
+        supportsAppReporting = nil
+        remoteHandshake = RemoteHandshake()
         state = .idle
     }
 
@@ -219,6 +233,9 @@ final class TVRemoteClient: ObservableObject {
             throw TVRemoteError.missingIdentity
         }
 
+        remoteDecoder = ProtobufFrameDecoder()
+        remoteHandshake = RemoteHandshake()
+        supportsAppReporting = nil
         let numberBox = RSANumberBox()
         let parameters = try makeTLSParameters(identity: identity, serverNumbers: numberBox)
         let connection = NWConnection(
@@ -355,19 +372,24 @@ final class TVRemoteClient: ObservableObject {
     private func handleRemoteData(_ data: Data) throws {
         for frame in try remoteDecoder.append(data) {
             let message = try Remote_RemoteMessage(serializedBytes: frame)
-            if message.hasRemoteConfigure {
-                var response = Remote_RemoteMessage()
-                response.remoteConfigure.code1 = 615
-                response.remoteConfigure.deviceInfo.unknown1 = 1
-                response.remoteConfigure.deviceInfo.unknown2 = "1"
-                response.remoteConfigure.deviceInfo.packageName = "atvremote"
-                response.remoteConfigure.deviceInfo.appVersion = "1.0.0"
+            if let app = ReportedTVApp(message: message) {
+                reportedApp = app
+                logger.debug("TV reported app: \(app.packageName, privacy: .public)")
+            }
+            if let response = remoteHandshake.response(to: message) {
                 try send(response, through: remoteConnection)
-
-                var active = Remote_RemoteMessage()
-                active.remoteSetActive.active = 615
-                try send(active, through: remoteConnection)
+                if message.hasRemoteConfigure {
+                    supportsAppReporting = remoteHandshake.supportsAppReporting
+                    logger.debug("Negotiated remote features: \(self.remoteHandshake.activeFeatures)")
+                    if !remoteHandshake.supportsAppReporting {
+                        logger.warning("TV did not advertise IME app reporting support")
+                    }
+                } else {
+                    logger.debug("Replied to TV remote activation request")
+                }
+            } else if message.hasRemoteStart {
                 state = .connected
+                logger.debug("TV remote session started")
             } else if message.hasRemotePingRequest {
                 var response = Remote_RemoteMessage()
                 response.remotePingResponse.val1 = message.remotePingRequest.val1
@@ -386,7 +408,13 @@ final class TVRemoteClient: ObservableObject {
                 content: content,
                 contentContext: .defaultMessage,
                 isComplete: false,
-                completion: .contentProcessed { _ in }
+                completion: .contentProcessed { [weak self] error in
+                    guard let error else { return }
+                    Task { @MainActor in
+                        self?.logger.error("Remote command send failed: \(error.localizedDescription, privacy: .public)")
+                        self?.state = .failed(error.localizedDescription)
+                    }
+                }
             )
         }
     }

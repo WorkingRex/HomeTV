@@ -3,6 +3,84 @@ import Network
 @testable import HomeTV
 
 final class HomeTVAppTests: XCTestCase {
+    func testRemoteHandshakeWaitsForActivationAndNegotiatesIME() throws {
+        var handshake = RemoteHandshake()
+        var configuration = Remote_RemoteMessage()
+        configuration.remoteConfigure.code1 = 615
+        let response = try XCTUnwrap(handshake.response(to: configuration))
+        XCTAssertEqual(response.remoteConfigure.code1, 615)
+        XCTAssertFalse(response.hasRemoteSetActive)
+        XCTAssertTrue(handshake.supportsAppReporting)
+
+        var activation = Remote_RemoteMessage()
+        activation.remoteSetActive.active = 0
+        let activeResponse = try XCTUnwrap(handshake.response(to: activation))
+        XCTAssertEqual(activeResponse.remoteSetActive.active, 615)
+        XCTAssertFalse(activeResponse.hasRemoteConfigure)
+        XCTAssertNil(handshake.response(to: RemoteMessageFactory.key(.home)))
+    }
+
+    func testRemoteHandshakeDoesNotAdvertiseUnsupportedFeatures() throws {
+        var handshake = RemoteHandshake()
+        var configuration = Remote_RemoteMessage()
+        configuration.remoteConfigure.code1 = 611
+        XCTAssertEqual(handshake.response(to: configuration)?.remoteConfigure.code1, 611)
+        XCTAssertFalse(handshake.supportsAppReporting)
+
+        var activation = Remote_RemoteMessage()
+        activation.remoteSetActive.active = 1023
+        XCTAssertEqual(handshake.response(to: activation)?.remoteSetActive.active, 611)
+    }
+
+    func testAppReportDecodesAfterActivationAndAcrossSplitFrames() throws {
+        var activation = Remote_RemoteMessage()
+        activation.remoteSetActive.active = 615
+        var appReport = Remote_RemoteMessage()
+        appReport.remoteImeKeyInject.appInfo.appPackage = "com.netflix.ninja"
+        let activationFrame = try ProtobufFrameCodec.frame(activation)
+        let appFrame = try ProtobufFrameCodec.frame(appReport)
+        var decoder = ProtobufFrameDecoder()
+        var handshake = RemoteHandshake()
+        let firstFrames = try decoder.append(activationFrame + appFrame.prefix(2))
+        XCTAssertEqual(firstFrames.count, 1)
+        let activationMessage = try Remote_RemoteMessage(serializedBytes: XCTUnwrap(firstFrames.first))
+        XCTAssertNotNil(handshake.response(to: activationMessage))
+        let remainingFrames = try decoder.append(Data(appFrame.dropFirst(2)))
+        let receivedApp = try Remote_RemoteMessage(serializedBytes: XCTUnwrap(remainingFrames.first))
+        XCTAssertEqual(ReportedTVApp(message: receivedApp)?.displayName, "Netflix")
+    }
+
+    func testReportedPlaybackAppsAreRecognizedFromTVMessages() throws {
+        for (package, name) in [
+            ("com.google.android.youtube.tv", "YouTube"),
+            ("com.google.android.youtube", "YouTube"),
+            ("com.netflix.ninja", "Netflix"),
+            ("com.netflix.mediaclient", "Netflix")
+        ] {
+            var message = Remote_RemoteMessage()
+            message.remoteImeKeyInject.appInfo.appPackage = package
+            let decoded = try Remote_RemoteMessage(serializedBytes: message.serializedData())
+            let app = try XCTUnwrap(ReportedTVApp(message: decoded))
+            XCTAssertEqual(app.packageName, package)
+            XCTAssertEqual(app.displayName, name)
+            XCTAssertTrue(app.showsPlaybackControls)
+        }
+    }
+
+    func testOtherAndUnknownAppsDoNotAutomaticallyShowPlaybackControls() throws {
+        XCTAssertNil(ReportedTVApp(message: RemoteMessageFactory.key(.home)))
+        var message = Remote_RemoteMessage()
+        message.remoteImeKeyInject.textFieldStatus.value = "Search"
+        XCTAssertNil(ReportedTVApp(message: message))
+
+        for package in ["com.google.android.tvlauncher", "", "com.netflix.ninja.fake"] {
+            message.remoteImeKeyInject.appInfo.appPackage = package
+            let app = try XCTUnwrap(ReportedTVApp(message: message))
+            XCTAssertFalse(app.showsPlaybackControls)
+            XCTAssertEqual(app.displayName, package.isEmpty ? "未知" : package)
+        }
+    }
+
     func testRemoteCommandKeyCodesMatchAndroidTVProtocolNames() {
         XCTAssertEqual(RemoteCommand.home.androidTVKeyCode, "HOME")
         XCTAssertEqual(RemoteCommand.select.androidTVKeyCode, "DPAD_CENTER")
@@ -23,6 +101,19 @@ final class HomeTVAppTests: XCTestCase {
         let framed = try ProtobufFrameCodec.frame(message)
         XCTAssertEqual(framed.first, 6)
         XCTAssertEqual(try Remote_RemoteMessage(serializedBytes: framed.dropFirst()), message)
+    }
+
+    func testBackMessageUsesAndroidBackKeyCode() throws {
+        let message = RemoteMessageFactory.key(.back)
+        XCTAssertEqual(RemoteCommand.back.androidTVKeyCode, "BACK")
+        XCTAssertEqual(message.remoteKeyInject.keyCode, .keycodeBack)
+        XCTAssertEqual(message.remoteKeyInject.keyCode.rawValue, 4)
+        XCTAssertEqual(message.remoteKeyInject.direction, .short)
+
+        let framed = try ProtobufFrameCodec.frame(message)
+        let decoded = try Remote_RemoteMessage(serializedBytes: framed.dropFirst())
+        XCTAssertEqual(decoded.remoteKeyInject.keyCode, .keycodeBack)
+        XCTAssertEqual(decoded.remoteKeyInject.direction, .short)
     }
 
     func testPowerMessageUsesPowerToggleKeyCode() throws {

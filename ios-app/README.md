@@ -36,3 +36,19 @@ Drag the joystick to send four-direction key presses; moving farther from center
 increases repeat speed, and releasing stops immediately. Tilt and joystick modes
 each retain an OK button. Leaving the app or losing the connection resets the
 mode to direction buttons and stops continuous input.
+
+## App-aware playback controls
+
+Fixed controls (Back, Home, Power, and volume) are placed above app-specific
+playback controls. Play/pause, rewind, and fast-forward appear automatically
+only when the TV reports YouTube or Netflix. They are hidden for other or unknown
+apps. Direction controls remain in the fixed bottom panel. App and tilt
+diagnostic hints stay hidden in an info popover next to the mode selector. The displayed app is the most
+recent package reported through the remote protocol's IME messages, not a
+guaranteed live foreground-app query; reports may be delayed or unavailable.
+App information is cleared when the remote connection leaves the connected state.
+The client negotiates IME support and replies to the TV's activation request
+before waiting for the remote-start event. If the TV does not advertise IME
+support, the UI explains that app reporting is unavailable. Xcode's console
+includes `RemoteSession` diagnostics for negotiated features, activation,
+session start, and reported app packages (without text-field contents).

@@ -1,6 +1,63 @@
 import Foundation
 import SwiftProtobuf
 
+struct RemoteHandshake {
+    private(set) var activeFeatures: Int32 = 615
+
+    var supportsAppReporting: Bool { activeFeatures & 4 != 0 }
+
+    mutating func response(to message: Remote_RemoteMessage) -> Remote_RemoteMessage? {
+        var response = Remote_RemoteMessage()
+        if message.hasRemoteConfigure {
+            activeFeatures &= message.remoteConfigure.code1
+            response.remoteConfigure.code1 = activeFeatures
+            response.remoteConfigure.deviceInfo.unknown1 = 1
+            response.remoteConfigure.deviceInfo.unknown2 = "1"
+            response.remoteConfigure.deviceInfo.packageName = "atvremote"
+            response.remoteConfigure.deviceInfo.appVersion = "1.0.0"
+        } else if message.hasRemoteSetActive {
+            response.remoteSetActive.active = activeFeatures
+        } else {
+            return nil
+        }
+        return response
+    }
+}
+
+struct ReportedTVApp: Equatable {
+    let packageName: String
+
+    init?(message: Remote_RemoteMessage) {
+        guard message.hasRemoteImeKeyInject,
+              message.remoteImeKeyInject.hasAppInfo else { return nil }
+        packageName = message.remoteImeKeyInject.appInfo.appPackage
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    var showsPlaybackControls: Bool {
+        switch packageName {
+        case "com.google.android.youtube.tv", "com.google.android.youtube",
+             "com.netflix.ninja", "com.netflix.mediaclient":
+            true
+        default:
+            false
+        }
+    }
+
+    var displayName: String {
+        switch packageName {
+        case "com.google.android.youtube.tv", "com.google.android.youtube":
+            "YouTube"
+        case "com.netflix.ninja", "com.netflix.mediaclient":
+            "Netflix"
+        case "":
+            "未知"
+        default:
+            packageName
+        }
+    }
+}
+
 enum RemoteProtocolError: Error, Equatable {
     case invalidFrameLength
     case frameTooLarge
