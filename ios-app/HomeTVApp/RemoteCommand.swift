@@ -1,5 +1,16 @@
 import Foundation
 
+enum JoystickTap {
+    static func isConfirmation(
+        startDistance: Double,
+        knobRadius: Double,
+        maximumTravel: Double,
+        duration: TimeInterval
+    ) -> Bool {
+        startDistance <= knobRadius && maximumTravel < 10 && duration >= 0 && duration <= 0.5
+    }
+}
+
 struct JoystickInput: Equatable {
     let command: RemoteCommand
     let repeatInterval: TimeInterval

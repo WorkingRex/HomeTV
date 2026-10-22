@@ -3,6 +3,15 @@ import Network
 @testable import HomeTV
 
 final class HomeTVAppTests: XCTestCase {
+    func testJoystickCenterTapConfirmsButDragAndLongPressDoNot() {
+        XCTAssertTrue(JoystickTap.isConfirmation(startDistance: 0, knobRadius: 32, maximumTravel: 0, duration: 0.1))
+        XCTAssertTrue(JoystickTap.isConfirmation(startDistance: 32, knobRadius: 32, maximumTravel: 9, duration: 0.5))
+        XCTAssertFalse(JoystickTap.isConfirmation(startDistance: 33, knobRadius: 32, maximumTravel: 0, duration: 0.1))
+        XCTAssertFalse(JoystickTap.isConfirmation(startDistance: 0, knobRadius: 32, maximumTravel: 10, duration: 0.1))
+        XCTAssertFalse(JoystickTap.isConfirmation(startDistance: 0, knobRadius: 32, maximumTravel: 80, duration: 0.2))
+        XCTAssertFalse(JoystickTap.isConfirmation(startDistance: 0, knobRadius: 32, maximumTravel: 0, duration: 0.6))
+    }
+
     func testRemoteHandshakeWaitsForActivationAndNegotiatesIME() throws {
         var handshake = RemoteHandshake()
         var configuration = Remote_RemoteMessage()

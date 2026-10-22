@@ -65,6 +65,7 @@ final class TVRemoteClient: ObservableObject {
     private var pairingConnection: NWConnection?
     private var remoteConnection: NWConnection?
     private var reconnectTask: Task<Void, Never>?
+    private var connectionTimeoutTask: Task<Void, Never>?
     private var remoteReconnectAttempts = 0
     private var pairingDecoder = ProtobufFrameDecoder()
     private var remoteDecoder = ProtobufFrameDecoder()
@@ -75,7 +76,7 @@ final class TVRemoteClient: ObservableObject {
         identityStore.hasStoredIdentity() && identityStore.isPaired(for: device.id)
     }
 
-    func startPairing(device: AndroidTVDevice) {
+    func startPairing(device: AndroidTVDevice, forcePairing: Bool = false) {
         stop()
         selectedDevice = device
         state = .resolving
@@ -83,10 +84,11 @@ final class TVRemoteClient: ObservableObject {
             do {
                 let reuseStoredIdentity = identityStore.hasStoredIdentity()
                 let resolvedHost = try await resolveHost(for: device)
-                let clientIdentity = try identityStore.loadOrCreate()
+                let clientIdentity = try identityStore.loadOrCreate(upgradeLegacyCertificate: forcePairing)
                 host = resolvedHost
                 identity = clientIdentity
-                shouldFallbackToPairing = reuseStoredIdentity || identityStore.isPaired(for: device.id)
+                shouldFallbackToPairing = !forcePairing &&
+                    (reuseStoredIdentity || identityStore.isPaired(for: device.id))
                 if shouldFallbackToPairing {
                     try openRemoteConnection()
                 } else {
@@ -140,6 +142,8 @@ final class TVRemoteClient: ObservableObject {
     }
 
     func stop() {
+        connectionTimeoutTask?.cancel()
+        connectionTimeoutTask = nil
         reconnectTask?.cancel()
         reconnectTask = nil
         remoteReconnectAttempts = 0
@@ -203,7 +207,7 @@ final class TVRemoteClient: ObservableObject {
         )
         connection.stateUpdateHandler = { [weak self] state in
             Task { @MainActor in
-                guard let self else { return }
+                guard let self, self.pairingConnection === connection else { return }
                 switch state {
                 case .ready:
                     self.serverNumbers = numberBox.value
@@ -211,7 +215,12 @@ final class TVRemoteClient: ObservableObject {
                     self.receive(on: connection, pairing: true)
                     var message = self.basePairingMessage()
                     message.pairingRequest.serviceName = "atvremote"
-                    message.pairingRequest.clientName = "HomeTV Remote"
+                    guard let identity = self.identity,
+                          let clientName = SecCertificateCopySubjectSummary(identity.certificate) as String? else {
+                        self.state = .failed(TVRemoteError.missingIdentity.localizedDescription)
+                        return
+                    }
+                    message.pairingRequest.clientName = clientName
                     try? self.send(message, through: connection)
                 case .failed(let error):
                     self.state = .failed(error.localizedDescription)
@@ -245,17 +254,12 @@ final class TVRemoteClient: ObservableObject {
         )
         connection.stateUpdateHandler = { [weak self] state in
             Task { @MainActor in
-                guard let self else { return }
+                guard let self, self.remoteConnection === connection else { return }
                 if case .failed(let error) = state {
-                    if self.shouldFallbackToPairing {
-                        self.remoteConnection = nil
-                        self.retryRemoteConnectionOrPair()
-                    } else {
-                        self.state = .failed(error.localizedDescription)
-                    }
+                    self.remoteConnectionFailed(error, connection: connection)
                 }
                 if case .ready = state {
-                    self.remoteReconnectAttempts = 0
+                    self.logger.debug("Remote TLS ready; waiting for protocol handshake")
                     self.reconnectTask?.cancel()
                     self.reconnectTask = nil
                     self.receive(on: connection, pairing: false)
@@ -265,16 +269,42 @@ final class TVRemoteClient: ObservableObject {
         remoteConnection = connection
         state = .connecting
         connection.start(queue: networkQueue)
+        connectionTimeoutTask?.cancel()
+        connectionTimeoutTask = Task { [weak self] in
+            do {
+                try await Task.sleep(for: .seconds(10))
+            } catch is CancellationError {
+                return
+            } catch {
+                self?.remoteConnectionFailed(error, connection: connection)
+                return
+            }
+            guard let self, self.state == .connecting else { return }
+            self.remoteConnectionFailed(TVRemoteError.handshakeTimedOut, connection: connection)
+        }
     }
 
-    private func retryRemoteConnectionOrPair() {
+    private func remoteConnectionFailed(_ error: Error, connection: NWConnection) {
+        guard remoteConnection === connection else { return }
+        connectionTimeoutTask?.cancel()
+        connectionTimeoutTask = nil
+        remoteConnection = nil
+        cancel(connection)
+        logger.error("Remote connection ended: \(error.localizedDescription, privacy: .public)")
+        if let networkError = error as? NWError, case .tls(-9825) = networkError {
+            state = .failed("電視不再接受這支手機的配對憑證。請點「重新配對」；若使用多支手機，請將各手機更新後各自重新配對一次。")
+            return
+        }
+        guard shouldFallbackToPairing, state == .connecting else {
+            state = .failed(error.localizedDescription)
+            return
+        }
+        retryRemoteConnection(after: error)
+    }
+
+    private func retryRemoteConnection(after error: Error) {
         guard remoteReconnectAttempts < 2 else {
-            shouldFallbackToPairing = false
-            do {
-                try openPairingConnection()
-            } catch {
-                state = .failed(error.localizedDescription)
-            }
+            state = .failed(error.localizedDescription)
             return
         }
 
@@ -312,6 +342,9 @@ final class TVRemoteClient: ObservableObject {
             connection.receive(minimumIncompleteLength: 1, maximumLength: 64 * 1024) { data, _, isComplete, error in
                 Task { @MainActor in
                     guard let self else { return }
+                    guard pairing ? self.pairingConnection === connection : self.remoteConnection === connection else {
+                        return
+                    }
                     do {
                         if let data {
                             if pairing {
@@ -321,7 +354,20 @@ final class TVRemoteClient: ObservableObject {
                             }
                         }
                     } catch {
-                        self.state = .failed(error.localizedDescription)
+                        if pairing {
+                            self.state = .failed(error.localizedDescription)
+                        } else {
+                            self.remoteConnectionFailed(error, connection: connection)
+                        }
+                        return
+                    }
+                    if !pairing, let error {
+                        self.remoteConnectionFailed(error, connection: connection)
+                        return
+                    }
+                    if !pairing, isComplete {
+                        self.remoteConnectionFailed(TVRemoteError.connectionClosed, connection: connection)
+                        return
                     }
                     if error == nil && !isComplete {
                         self.receive(on: connection, pairing: pairing)
@@ -388,6 +434,9 @@ final class TVRemoteClient: ObservableObject {
                     logger.debug("Replied to TV remote activation request")
                 }
             } else if message.hasRemoteStart {
+                connectionTimeoutTask?.cancel()
+                connectionTimeoutTask = nil
+                remoteReconnectAttempts = 0
                 state = .connected
                 logger.debug("TV remote session started")
             } else if message.hasRemotePingRequest {
@@ -403,7 +452,7 @@ final class TVRemoteClient: ObservableObject {
             throw TVRemoteError.notConnected
         }
         let content = try ProtobufFrameCodec.frame(message)
-        networkQueue.async {
+        networkQueue.async { [weak self] in
             connection.send(
                 content: content,
                 contentContext: .defaultMessage,
@@ -411,8 +460,13 @@ final class TVRemoteClient: ObservableObject {
                 completion: .contentProcessed { [weak self] error in
                     guard let error else { return }
                     Task { @MainActor in
-                        self?.logger.error("Remote command send failed: \(error.localizedDescription, privacy: .public)")
-                        self?.state = .failed(error.localizedDescription)
+                        guard let self else { return }
+                        if self.remoteConnection === connection {
+                            self.remoteConnectionFailed(error, connection: connection)
+                        } else if self.pairingConnection === connection {
+                            self.logger.error("Pairing send failed: \(error.localizedDescription, privacy: .public)")
+                            self.state = .failed(error.localizedDescription)
+                        }
                     }
                 }
             )
@@ -485,6 +539,8 @@ private enum TVRemoteError: LocalizedError {
     case invalidPairingCode
     case notConnected
     case pairingRejected(Int)
+    case handshakeTimedOut
+    case connectionClosed
 
     var errorDescription: String? {
         switch self {
@@ -494,6 +550,8 @@ private enum TVRemoteError: LocalizedError {
         case .invalidPairingCode: "The pairing code is invalid."
         case .notConnected: "The Android TV is not connected."
         case .pairingRejected(let status): "The TV rejected pairing (status \(status))."
+        case .handshakeTimedOut: "電視未在 10 秒內完成連線。請先關閉另一支手機的 HomeTV 再重試；配對資料仍保留。"
+        case .connectionClosed: "電視已關閉遙控連線，可能有其他裝置連入。請重新連線；不需要先刪除配對。"
         }
     }
 }

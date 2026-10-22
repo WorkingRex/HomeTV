@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		1221F171DFD788E8F8B7FC2D /* polo.pb.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F1B0FB2C3D8C1FA7A594BDD /* polo.pb.swift */; };
 		1A29D652F35D3CFEB19A18B1 /* TVIdentityStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9138DFE41093EE435B987D7 /* TVIdentityStore.swift */; };
+		2BDA236EFFB650E1319233C2 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C2EAC809EF1717D8DD210FFF /* Assets.xcassets */; };
 		3175A337B6837271F91605C9 /* TVRemoteClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DA5A72C5BC7D3CD2C5E489 /* TVRemoteClient.swift */; };
 		339B1C37E355524673CC1C85 /* remotemessage.pb.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA4C5F01190E0D6A24D4F46E /* remotemessage.pb.swift */; };
 		4C13F838800CE1E0A2268E76 /* HomeTVApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC807F0BFB0CF582B01CA22D /* HomeTVApp.swift */; };
@@ -44,6 +45,7 @@
 		ADDEB91F5EE0634CA514EC9B /* RemoteProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteProtocol.swift; sourceTree = "<group>"; };
 		B2735F1CBC12041BD94FF8FE /* TVIdentityStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVIdentityStoreTests.swift; sourceTree = "<group>"; };
 		B3A2FF4E1B1FCC2442D5764B /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		C2EAC809EF1717D8DD210FFF /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		CA4C5F01190E0D6A24D4F46E /* remotemessage.pb.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = remotemessage.pb.swift; sourceTree = "<group>"; };
 		D9138DFE41093EE435B987D7 /* TVIdentityStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVIdentityStore.swift; sourceTree = "<group>"; };
 		EE1D0FEB165F3B9B69AB3D42 /* TVDiscovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVDiscovery.swift; sourceTree = "<group>"; };
@@ -101,6 +103,7 @@
 		9F4AED43282D01F37DF9559D /* HomeTVApp */ = {
 			isa = PBXGroup;
 			children = (
+				C2EAC809EF1717D8DD210FFF /* Assets.xcassets */,
 				B3A2FF4E1B1FCC2442D5764B /* ContentView.swift */,
 				AC807F0BFB0CF582B01CA22D /* HomeTVApp.swift */,
 				A3307528376495DC51B9A1D1 /* RemoteCommand.swift */,
@@ -149,6 +152,7 @@
 			buildConfigurationList = 100DAD1C8AA155BFD3FE91DD /* Build configuration list for PBXNativeTarget "HomeTV" */;
 			buildPhases = (
 				55B3AA7EE5170AAA6E92DE69 /* Sources */,
+				4974862C814C1BB1124E5C2C /* Resources */,
 				7EBFFDAECBBD3D72BBCF2F1B /* Frameworks */,
 			);
 			buildRules = (
@@ -201,6 +205,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		4974862C814C1BB1124E5C2C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2BDA236EFFB650E1319233C2 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		5563B1D4B30F26C61C55C56F /* Sources */ = {
@@ -359,8 +374,8 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_LANGUAGE = "zh-Hant";
 				ENABLE_NS_ASSERTIONS = NO;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;

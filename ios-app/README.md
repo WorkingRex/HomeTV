@@ -33,9 +33,12 @@ selector in the same fixed bottom area, separate from the scrolling remote butto
 Tilt automatically calibrates on entry and stops when leaving
 the mode or the app. It requires a physical device with motion sensors.
 Drag the joystick to send four-direction key presses; moving farther from center
-increases repeat speed, and releasing stops immediately. Tilt and joystick modes
-each retain an OK button. Leaving the app or losing the connection resets the
+increases repeat speed, and releasing stops immediately. Tilt retains an OK
+button; joystick mode uses its central OK knob without a separate button or
+inline instructions. Leaving the app or losing the connection resets the
 mode to direction buttons and stops continuous input.
+Tapping the joystick's central OK knob also confirms. A drag (even if it returns
+to center) or a press longer than half a second does not confirm on release.
 
 ## App-aware playback controls
 
@@ -52,3 +55,24 @@ before waiting for the remote-start event. If the TV does not advertise IME
 support, the UI explains that app reporting is unavailable. Xcode's console
 includes `RemoteSession` diagnostics for negotiated features, activation,
 session start, and reported app packages (without text-field contents).
+
+To pair the selected TV again, tap its status row, choose **重新配對**,
+confirm, then enter the code shown on the TV. The app reuses its saved identity
+and keeps it unless a pairing completes with the TV.
+The main screen keeps a fixed-height status row with the TV name and a green
+dot when connected. Tap it to open connection settings in a sheet without
+expanding or resizing the remote layout. Discovery and pairing share this sheet;
+closing settings alone does not disconnect an established session.
+
+Remote connections have a 10-second deadline covering TLS and the protocol
+handshake. Reconnecting with an existing identity retries up to three attempts;
+failure preserves the identity and reports an error instead of automatically
+starting pairing. A closed socket is reported rather than left in "Connecting".
+When testing multiple phones, close HomeTV on the other phone to check whether
+the TV's remote service permits concurrent sessions. Pairing storage and
+simultaneous connection support are separate capabilities.
+New client certificates and pairing client names are unique per installation.
+Explicit re-pairing upgrades legacy certificates named only `HomeTV Remote`,
+keeping the existing private key. This changes the certificate used with all
+previously paired TVs, which may each require re-pairing. Existing uniquely named
+certificates are reused, not regenerated on every launch or re-pair.

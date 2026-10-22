@@ -43,12 +43,19 @@ final class TVIdentityStore {
         UserDefaults.standard.set(true, forKey: "com.rexylin.hometv.paired.\(deviceID)")
     }
 
-    func loadOrCreate() throws -> TVIdentity {
+    func loadOrCreate(upgradeLegacyCertificate: Bool = false) throws -> TVIdentity {
         let privateKey = try loadOrCreatePrivateKey()
         let certificateData: Data
 
         if let savedCertificate = try loadCertificateData() {
-            certificateData = savedCertificate
+            if upgradeLegacyCertificate,
+               let certificate = SecCertificateCreateWithData(nil, savedCertificate as CFData),
+               SecCertificateCopySubjectSummary(certificate) as String? == clientName {
+                certificateData = try createCertificate(for: privateKey)
+                try saveCertificateData(certificateData)
+            } else {
+                certificateData = savedCertificate
+            }
         } else {
             certificateData = try createCertificate(for: privateKey)
             try saveCertificateData(certificateData)
@@ -176,7 +183,7 @@ final class TVIdentityStore {
     private func createCertificate(for privateKey: SecKey) throws -> Data {
         let certificateKey = try Certificate.PrivateKey(privateKey)
         let name = try DistinguishedName {
-            CommonName(clientName)
+            CommonName("\(clientName)-\(UUID().uuidString)")
         }
         let extensions = try Certificate.Extensions {
             Critical(BasicConstraints.isCertificateAuthority(maxPathLength: 0))
@@ -231,7 +238,22 @@ final class TVIdentityStore {
             kSecValueData as String: data,
         ]
         let status = SecItemAdd(query as CFDictionary, nil)
-        guard status == errSecSuccess || status == errSecDuplicateItem else {
+        if status == errSecDuplicateItem {
+            let match: [String: Any] = [
+                kSecClass as String: kSecClassGenericPassword,
+                kSecAttrService as String: certificateService,
+                kSecAttrAccount as String: certificateAccount,
+            ]
+            let updateStatus = SecItemUpdate(
+                match as CFDictionary,
+                [kSecValueData as String: data] as CFDictionary
+            )
+            guard updateStatus == errSecSuccess else {
+                throw TVIdentityError.keychainFailure(updateStatus)
+            }
+            return
+        }
+        guard status == errSecSuccess else {
             throw TVIdentityError.keychainFailure(status)
         }
     }

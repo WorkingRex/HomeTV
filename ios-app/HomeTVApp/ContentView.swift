@@ -13,7 +13,8 @@ struct ContentView: View {
     @State private var pairingCode = ""
     @State private var showPairingSheet = false
     @State private var isDiscoveryExpanded = true
-    @State private var isConnectionExpanded = true
+    @State private var showConnectionSheet = false
+    @State private var showRePairConfirmation = false
     @AppStorage("com.rexylin.hometv.last-device-id") private var lastDeviceID = ""
 
     var body: some View {
@@ -85,38 +86,44 @@ struct ContentView: View {
     }
 
     private var connectionCard: some View {
-        DisclosureGroup(isExpanded: $isConnectionExpanded) {
-            VStack(alignment: .leading, spacing: 12) {
-                discoveryControls
-
-                if let selectedDevice {
-                    Label("Selected \(selectedDevice.name)", systemImage: "checkmark.circle.fill")
-                        .font(.subheadline)
-                        .foregroundStyle(.green)
-                    Text(pairingDescription)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .padding(.top, 8)
+        Button {
+            showConnectionSheet = true
         } label: {
-            Label(connectionSummary, systemImage: connectionSymbol)
-                .font(.headline)
+            HStack {
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(remote.state == .connected ? .green : .secondary)
+                        .frame(width: 6, height: 6)
+                    Text(remote.state == .connected ? selectedDevice?.name ?? "Android TV" : connectionSummary)
+                        .lineLimit(1)
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .accessibilityLabel(connectionSummary)
+                Spacer()
+                Image(systemName: "gearshape")
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 12)
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
+        .buttonStyle(.plain)
         .background(.background, in: RoundedRectangle(cornerRadius: 16))
-        .sheet(isPresented: $showPairingSheet, onDismiss: {
-            if remote.state != .connected {
+        .sheet(isPresented: $showConnectionSheet, onDismiss: {
+            if showPairingSheet, remote.state != .connected {
                 remote.stop()
             }
+            showPairingSheet = false
         }) {
-            if let selectedDevice {
+            if showPairingSheet, let selectedDevice {
                 PairingSheet(
                     deviceName: selectedDevice.name,
                     code: $pairingCode,
                     remote: remote
                 )
+            } else {
+                connectionSettings
             }
         }
         .onChange(of: remote.state) { _, newState in
@@ -127,16 +134,59 @@ struct ContentView: View {
             switch newState {
             case .connected:
                 showPairingSheet = false
-                isConnectionExpanded = false
+                showConnectionSheet = false
                 isDiscoveryExpanded = false
             case .awaitingPairingCode:
                 showPairingSheet = true
-                isConnectionExpanded = true
+                showConnectionSheet = true
             case .resolving, .pairing, .connecting, .failed:
                 tilt.isEnabled = false
-                isConnectionExpanded = true
             case .idle:
                 break
+            }
+        }
+    }
+
+    private var connectionSettings: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text(connectionSummary)
+                        .font(.headline)
+                    discoveryControls
+                    if selectedDevice != nil {
+                        Text(pairingDescription)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                        Button("重新配對", systemImage: "arrow.triangle.2.circlepath") {
+                            showRePairConfirmation = true
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(remote.state == .resolving || remote.state == .pairing || remote.state == .connecting)
+                    }
+                }
+                .padding()
+            }
+            .navigationTitle("連線設定")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("完成") { showConnectionSheet = false }
+                }
+            }
+            .confirmationDialog(
+                "重新配對 \(selectedDevice?.name ?? "Android TV")？",
+                isPresented: $showRePairConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("開始重新配對", role: .destructive) {
+                    guard let selectedDevice else { return }
+                    pairingCode = ""
+                    showPairingSheet = true
+                    remote.startPairing(device: selectedDevice, forcePairing: true)
+                }
+            } message: {
+                Text("目前連線會中斷，請依電視畫面輸入新的配對碼。")
             }
         }
     }
@@ -200,10 +250,6 @@ struct ContentView: View {
         return connectionStatus
     }
 
-    private var connectionSymbol: String {
-        remote.state == .connected ? "checkmark.circle.fill" : "tv"
-    }
-
     private var isPreview: Bool {
         ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
     }
@@ -219,7 +265,6 @@ struct ContentView: View {
         selectedDevice = device
         lastDeviceID = device.id
         pairingCode = ""
-        isConnectionExpanded = true
         showPairingSheet = false
         remote.startPairing(device: device)
     }
@@ -319,14 +364,11 @@ struct ContentView: View {
                 commandButton(.select)
             }
         case .joystick:
-            VStack(spacing: 12) {
-                JoystickControl(
-                    isActive: remote.state == .connected && scenePhase == .active,
-                    onCommand: { remote.send($0) },
-                    diameter: verticalSizeClass == .compact ? 144 : 224
-                )
-                commandButton(.select)
-            }
+            JoystickControl(
+                isActive: remote.state == .connected && scenePhase == .active,
+                onCommand: { remote.send($0) },
+                diameter: verticalSizeClass == .compact ? 144 : 224
+            )
         }
     }
 
@@ -473,26 +515,28 @@ private struct JoystickControl: View {
     let diameter: CGFloat
     @State private var offset = CGSize.zero
     @State private var input: JoystickInput?
+    @State private var maximumTravel: CGFloat = 0
+    @State private var gestureStartedAt: Date?
 
     private var radius: CGFloat { diameter * 0.36 }
+    private var knobDiameter: CGFloat { min(64, diameter * 0.3) }
 
     var body: some View {
         VStack(spacing: 8) {
-            Text("拖曳搖桿，離中心越遠連發越快；放手停止。")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-
             ZStack {
                 Circle()
                     .fill(.quaternary)
                 Image(systemName: "arrow.up.and.down.and.arrow.left.and.right")
                     .font(.largeTitle)
                     .foregroundStyle(.secondary)
-                Circle()
-                    .fill(Color.accentColor)
-                    .frame(width: min(64, diameter * 0.3), height: min(64, diameter * 0.3))
+                ZStack {
+                    Circle()
+                        .fill(Color.accentColor)
+                    Text("OK")
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                }
+                    .frame(width: knobDiameter, height: knobDiameter)
                     .offset(offset)
             }
             .frame(width: diameter, height: diameter)
@@ -501,7 +545,11 @@ private struct JoystickControl: View {
                 DragGesture(minimumDistance: 0)
                     .onChanged { value in
                         guard isActive else { return }
+                        if gestureStartedAt == nil {
+                            gestureStartedAt = value.time
+                        }
                         let distance = hypot(value.translation.width, value.translation.height)
+                        maximumTravel = max(maximumTravel, distance)
                         let scale = distance > radius ? radius / distance : 1
                         offset = CGSize(
                             width: value.translation.width * scale,
@@ -512,10 +560,30 @@ private struct JoystickControl: View {
                             y: Double(offset.height / radius)
                         )
                     }
-                    .onEnded { _ in stop() }
+                    .onEnded { value in
+                        let startDistance = hypot(
+                            value.startLocation.x - diameter / 2,
+                            value.startLocation.y - diameter / 2
+                        )
+                        let travel = max(
+                            maximumTravel,
+                            hypot(value.translation.width, value.translation.height)
+                        )
+                        let confirms = isActive && JoystickTap.isConfirmation(
+                            startDistance: Double(startDistance),
+                            knobRadius: Double(knobDiameter / 2),
+                            maximumTravel: Double(travel),
+                            duration: gestureStartedAt.map { value.time.timeIntervalSince($0) } ?? .infinity
+                        )
+                        stop()
+                        if confirms { onCommand(.select) }
+                    }
             )
             .accessibilityLabel("方向搖桿")
             .accessibilityValue(input?.command.rawValue ?? "Center")
+            .accessibilityAction {
+                if isActive { onCommand(.select) }
+            }
         }
         .disabled(!isActive)
         .task(id: input != nil && isActive) {
@@ -550,6 +618,8 @@ private struct JoystickControl: View {
     private func stop() {
         input = nil
         offset = .zero
+        maximumTravel = 0
+        gestureStartedAt = nil
     }
 }
 

@@ -39,6 +39,8 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.rexylin.hometv
         TARGETED_DEVICE_FAMILY: "1"
         CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: S6DBG86B3R
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     dependencies:
       - package: SwiftProtobuf
         product: SwiftProtobuf
