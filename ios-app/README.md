@@ -76,3 +76,12 @@ Explicit re-pairing upgrades legacy certificates named only `HomeTV Remote`,
 keeping the existing private key. This changes the certificate used with all
 previously paired TVs, which may each require re-pairing. Existing uniquely named
 certificates are reused, not regenerated on every launch or re-pair.
+
+The single app-shortcut slot is stored locally on each phone. With the TV
+connected and an app reported, tap **+** to save that app. Tap its shortcut to
+launch it; long-press the shortcut to reveal the clear button. Only one app can
+be saved in this slot: tapping an existing shortcut launches it rather than
+replacing it. The TV protocol reports package names, not original app artwork,
+so YouTube and Netflix use built-in recognizable glyphs and other apps use a
+generic app icon. Launching uses app-specific links for YouTube and Netflix and
+an `android-app://` URI for other reported Android packages.

@@ -58,6 +58,54 @@ struct ReportedTVApp: Equatable {
     }
 }
 
+struct AppShortcut: Equatable {
+    let packageName: String
+    let displayName: String
+
+    init?(packageName: String, displayName: String) {
+        guard packageName.range(
+            of: #"^[A-Za-z0-9_]+(\.[A-Za-z0-9_]+)+$"#,
+            options: .regularExpression
+        ) != nil else {
+            return nil
+        }
+        self.packageName = packageName
+        self.displayName = displayName.isEmpty ? packageName : displayName
+    }
+
+    init?(reportedApp: ReportedTVApp) {
+        self.init(packageName: reportedApp.packageName, displayName: reportedApp.displayName)
+    }
+
+    var appLink: String {
+        switch packageName {
+        case "com.google.android.youtube.tv", "com.google.android.youtube":
+            "https://www.youtube.com"
+        case "com.netflix.ninja", "com.netflix.mediaclient":
+            "netflix://"
+        default:
+            "android-app://\(packageName)"
+        }
+    }
+
+    var iconKind: AppShortcutIconKind {
+        switch packageName {
+        case "com.google.android.youtube.tv", "com.google.android.youtube":
+            .youtube
+        case "com.netflix.ninja", "com.netflix.mediaclient":
+            .netflix
+        default:
+            .generic
+        }
+    }
+}
+
+enum AppShortcutIconKind: Equatable {
+    case youtube
+    case netflix
+    case generic
+}
+
 enum RemoteProtocolError: Error, Equatable {
     case invalidFrameLength
     case frameTooLarge

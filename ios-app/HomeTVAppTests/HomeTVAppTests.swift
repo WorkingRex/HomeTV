@@ -3,6 +3,48 @@ import Network
 @testable import HomeTV
 
 final class HomeTVAppTests: XCTestCase {
+    func testAppShortcutBuildsNetflixDeepLinkForDetectedPackage() throws {
+        var message = Remote_RemoteMessage()
+        message.remoteImeKeyInject.appInfo.appPackage = "com.netflix.ninja"
+        let reported = try XCTUnwrap(ReportedTVApp(message: message))
+        let value = try XCTUnwrap(AppShortcut(reportedApp: reported))
+        XCTAssertEqual(value.displayName, "Netflix")
+        XCTAssertEqual(value.iconKind, .netflix)
+        XCTAssertEqual(value.appLink, "netflix://")
+    }
+
+    func testAppShortcutUsesKnownDeepLinksAndAndroidAppURIForOtherPackages() {
+        XCTAssertEqual(
+            AppShortcut(packageName: "com.google.android.youtube.tv", displayName: "YouTube")?.appLink,
+            "https://www.youtube.com"
+        )
+        XCTAssertEqual(
+            AppShortcut(packageName: "com.example.tv", displayName: "Example")?.appLink,
+            "android-app://com.example.tv"
+        )
+    }
+
+    func testAppShortcutRejectsInvalidPackageNames() {
+        XCTAssertNil(AppShortcut(packageName: "", displayName: ""))
+        XCTAssertNil(AppShortcut(packageName: "com.netflix;end", displayName: "Netflix"))
+        XCTAssertNil(AppShortcut(packageName: "com.example/path", displayName: "Example"))
+        XCTAssertEqual(
+            AppShortcut(packageName: "com.example.tv", displayName: "").map(\.displayName),
+            "com.example.tv"
+        )
+    }
+
+    func testAppShortcutUsesKnownIconsAndGenericFallback() {
+        XCTAssertEqual(
+            AppShortcut(packageName: "com.google.android.youtube.tv", displayName: "YouTube")?.iconKind,
+            .youtube
+        )
+        XCTAssertEqual(
+            AppShortcut(packageName: "com.example.tv", displayName: "Example")?.iconKind,
+            .generic
+        )
+    }
+
     func testJoystickCenterTapConfirmsButDragAndLongPressDoNot() {
         XCTAssertTrue(JoystickTap.isConfirmation(startDistance: 0, knobRadius: 32, maximumTravel: 0, duration: 0.1))
         XCTAssertTrue(JoystickTap.isConfirmation(startDistance: 32, knobRadius: 32, maximumTravel: 9, duration: 0.5))

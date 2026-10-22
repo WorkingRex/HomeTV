@@ -15,7 +15,10 @@ struct ContentView: View {
     @State private var isDiscoveryExpanded = true
     @State private var showConnectionSheet = false
     @State private var showRePairConfirmation = false
+    @State private var isShortcutEditing = false
     @AppStorage("com.rexylin.hometv.last-device-id") private var lastDeviceID = ""
+    @AppStorage("com.rexylin.hometv.app-shortcut.package") private var shortcutPackage = ""
+    @AppStorage("com.rexylin.hometv.app-shortcut.name") private var shortcutName = ""
 
     var body: some View {
         ScrollView {
@@ -334,9 +337,88 @@ struct ContentView: View {
 
     private var navigationControls: some View {
         HStack(spacing: 12) {
+            appShortcutButton
             commandButton(.back)
             commandButton(.home)
             commandButton(.power)
+        }
+    }
+
+    private var appShortcutButton: some View {
+        let shortcut = AppShortcut(packageName: shortcutPackage, displayName: shortcutName)
+        let detectedApp = remote.reportedApp.flatMap(AppShortcut.init(reportedApp:))
+
+        return Button {
+            guard !isShortcutEditing else { return }
+            if let shortcut {
+                remote.launchApp(uri: shortcut.appLink)
+            } else if let detectedApp {
+                shortcutPackage = detectedApp.packageName
+                shortcutName = detectedApp.displayName
+            }
+        } label: {
+            ZStack(alignment: .center) {
+                VStack(spacing: 3) {
+                    if let shortcut {
+                        appShortcutIcon(shortcut.iconKind)
+                        Text(shortcut.displayName)
+                            .font(.caption2)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                    } else {
+                        Image(systemName: "plus")
+                            .font(.system(size: 17, weight: .semibold))
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 56)
+            }
+            .overlay(alignment: .topTrailing) {
+                if isShortcutEditing, shortcut != nil {
+                    Button {
+                        shortcutPackage = ""
+                        shortcutName = ""
+                        isShortcutEditing = false
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 19))
+                            .symbolRenderingMode(.palette)
+                            .foregroundStyle(.white, .red)
+                    }
+                    .buttonStyle(.plain)
+                    .offset(x: 7, y: -7)
+                    .accessibilityLabel("清除 App 快捷鍵")
+                }
+            }
+        }
+        .buttonStyle(.bordered)
+        .accessibilityLabel(shortcut?.displayName ?? "新增目前 App 為快捷鍵")
+        .accessibilityHint(shortcut == nil ? "點擊儲存電視目前開啟的 App" : "點擊啟動；長按可清除")
+        .disabled(remote.state != .connected || (shortcut == nil && detectedApp == nil))
+        .simultaneousGesture(
+            LongPressGesture(minimumDuration: 0.45)
+                .onEnded { _ in
+                    guard shortcut != nil else { return }
+                    isShortcutEditing = true
+                }
+        )
+    }
+
+    @ViewBuilder
+    private func appShortcutIcon(_ kind: AppShortcutIconKind) -> some View {
+        switch kind {
+        case .youtube:
+            Image(systemName: "play.rectangle.fill")
+                .font(.system(size: 21, weight: .semibold))
+                .foregroundStyle(.red)
+        case .netflix:
+            Text("N")
+                .font(.system(size: 22, weight: .black, design: .serif))
+                .foregroundStyle(.red)
+        case .generic:
+            Image(systemName: "app.fill")
+                .font(.system(size: 19, weight: .semibold))
+                .foregroundStyle(.tint)
         }
     }
 
