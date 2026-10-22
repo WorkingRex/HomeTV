@@ -15,18 +15,19 @@ struct ContentView: View {
     @State private var isDiscoveryExpanded = true
     @State private var showConnectionSheet = false
     @State private var showRePairConfirmation = false
-    @State private var isShortcutEditing = false
+    @State private var editingShortcutID: String?
+    @State private var shortcutStorageError: String?
     @AppStorage("com.rexylin.hometv.last-device-id") private var lastDeviceID = ""
-    @AppStorage("com.rexylin.hometv.app-shortcut.package") private var shortcutPackage = ""
-    @AppStorage("com.rexylin.hometv.app-shortcut.name") private var shortcutName = ""
+    @AppStorage("com.rexylin.hometv.app-shortcuts") private var shortcutsData = "[]"
+    @AppStorage("com.rexylin.hometv.app-shortcut.package") private var legacyShortcutPackage = ""
+    @AppStorage("com.rexylin.hometv.app-shortcut.name") private var legacyShortcutName = ""
+    @AppStorage("com.rexylin.hometv.remote-control-order") private var controlOrderData = "[]"
 
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
                 connectionCard
-                navigationControls
-                volumeControls
-                transportControls
+                remoteControlGrid
             }
             .padding()
         }
@@ -66,6 +67,8 @@ struct ContentView: View {
             isHintPopoverPresented = false
         }
         .task {
+            validateShortcutStorage()
+            migrateLegacyShortcutIfNeeded()
             tilt.onCommand = { command in
                 remote.send(command)
             }
@@ -319,66 +322,135 @@ struct ContentView: View {
         }
     }
 
-    private var transportControls: some View {
-        Group {
-            if remote.reportedApp?.showsPlaybackControls == true {
-                playbackButtons
+    private var remoteControlGrid: some View {
+        let availableIDs = [
+            "back", "home", "power", "volumeDown", "mute", "volumeUp",
+            "rewind", "playPause", "fastForward", "add-shortcut"
+        ]
+        let playbackIDs = remote.reportedApp?.showsPlaybackControls == true
+            ? ["rewind", "playPause", "fastForward"]
+            : []
+        let visibleIDs = availableIDs.filter { !["rewind", "playPause", "fastForward"].contains($0) || playbackIDs.contains($0) }
+            + shortcuts.map { "shortcut:\($0.packageName)" }
+        let orderedIDs = RemoteControlLayout.orderedIDs(
+            availableIDs: visibleIDs,
+            storedIDs: storedControlIDs
+        )
+
+        return LazyVGrid(
+            columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())],
+            spacing: 10
+        ) {
+            ForEach(orderedIDs, id: \.self) { id in
+                controlTile(for: id)
+                    .draggable(id)
+                    .dropDestination(for: String.self) { items, _ in
+                        guard let source = items.first else { return false }
+                        storeControlOrder(
+                            RemoteControlLayout.moving(orderedIDs, source: source, destination: id)
+                        )
+                        return true
+                    }
+            }
+        }
+        .alert("快捷鍵儲存錯誤", isPresented: Binding(
+            get: { shortcutStorageError != nil },
+            set: { if !$0 { shortcutStorageError = nil } }
+        )) {
+            Button("好", role: .cancel) { shortcutStorageError = nil }
+        } message: {
+            Text(shortcutStorageError ?? "無法儲存快捷鍵。")
+        }
+    }
+
+    private var shortcuts: [AppShortcut] {
+        do {
+            let decoded = try JSONDecoder().decode([AppShortcut].self, from: Data(shortcutsData.utf8))
+            var seen = Set<String>()
+            return decoded.filter { seen.insert($0.packageName).inserted }
+        } catch {
+            if shortcutsData != "[]" {
+                return []
+            }
+            return []
+        }
+    }
+
+    private var storedControlIDs: [String] {
+        (try? JSONDecoder().decode([String].self, from: Data(controlOrderData.utf8))) ?? []
+    }
+
+    @ViewBuilder
+    private func controlTile(for id: String) -> some View {
+        switch id {
+        case "add-shortcut":
+            addShortcutButton
+        case "back":
+            commandButton(.back)
+        case "home":
+            commandButton(.home)
+        case "power":
+            commandButton(.power)
+        case "volumeDown":
+            commandButton(.volumeDown)
+        case "mute":
+            commandButton(.mute)
+        case "volumeUp":
+            commandButton(.volumeUp)
+        case "rewind":
+            commandButton(.rewind)
+        case "playPause":
+            commandButton(.playPause)
+        case "fastForward":
+            commandButton(.fastForward)
+        default:
+            if id.hasPrefix("shortcut:"),
+               let shortcut = shortcuts.first(where: { "shortcut:\($0.packageName)" == id }) {
+                shortcutButton(shortcut)
+            } else {
+                EmptyView()
             }
         }
     }
 
-    private var playbackButtons: some View {
-        HStack(spacing: 12) {
-            commandButton(.rewind)
-            commandButton(.playPause)
-            commandButton(.fastForward)
-        }
-    }
-
-    private var navigationControls: some View {
-        HStack(spacing: 12) {
-            appShortcutButton
-            commandButton(.back)
-            commandButton(.home)
-            commandButton(.power)
-        }
-    }
-
-    private var appShortcutButton: some View {
-        let shortcut = AppShortcut(packageName: shortcutPackage, displayName: shortcutName)
+    private var addShortcutButton: some View {
         let detectedApp = remote.reportedApp.flatMap(AppShortcut.init(reportedApp:))
+        let isAlreadySaved = detectedApp.map { app in
+            shortcuts.contains(where: { $0.packageName == app.packageName })
+        } ?? false
 
         return Button {
-            guard !isShortcutEditing else { return }
-            if let shortcut {
-                remote.launchApp(uri: shortcut.appLink)
-            } else if let detectedApp {
-                shortcutPackage = detectedApp.packageName
-                shortcutName = detectedApp.displayName
-            }
+            guard let detectedApp, !isAlreadySaved else { return }
+            saveShortcuts(AppShortcutCollection.adding(detectedApp, to: shortcuts))
         } label: {
-            ZStack(alignment: .center) {
-                VStack(spacing: 3) {
-                    if let shortcut {
-                        appShortcutIcon(shortcut.iconKind)
-                        Text(shortcut.displayName)
-                            .font(.caption2)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.7)
-                    } else {
-                        Image(systemName: "plus")
-                            .font(.system(size: 17, weight: .semibold))
-                    }
-                }
+            Image(systemName: "plus")
                 .frame(maxWidth: .infinity)
                 .frame(height: 56)
+        }
+        .buttonStyle(.bordered)
+        .accessibilityLabel("新增目前 App 為快捷鍵")
+        .disabled(remote.state != .connected || detectedApp == nil || isAlreadySaved)
+    }
+
+    private func shortcutButton(_ shortcut: AppShortcut) -> some View {
+        Button {
+            guard editingShortcutID != shortcut.id else { return }
+            remote.launchApp(uri: shortcut.appLink)
+        } label: {
+            VStack(spacing: 3) {
+                appShortcutIcon(shortcut.iconKind)
+                Text(shortcut.displayName)
+                    .font(.caption2)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
             }
+            .frame(maxWidth: .infinity)
+            .frame(height: 56)
             .overlay(alignment: .topTrailing) {
-                if isShortcutEditing, shortcut != nil {
+                if editingShortcutID == shortcut.id {
                     Button {
-                        shortcutPackage = ""
-                        shortcutName = ""
-                        isShortcutEditing = false
+                        saveShortcuts(AppShortcutCollection.removing(id: shortcut.id, from: shortcuts))
+                        editingShortcutID = nil
                     } label: {
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 19))
@@ -387,21 +459,68 @@ struct ContentView: View {
                     }
                     .buttonStyle(.plain)
                     .offset(x: 7, y: -7)
-                    .accessibilityLabel("清除 App 快捷鍵")
+                    .accessibilityLabel("清除 \(shortcut.displayName) 快捷鍵")
                 }
             }
         }
         .buttonStyle(.bordered)
-        .accessibilityLabel(shortcut?.displayName ?? "新增目前 App 為快捷鍵")
-        .accessibilityHint(shortcut == nil ? "點擊儲存電視目前開啟的 App" : "點擊啟動；長按可清除")
-        .disabled(remote.state != .connected || (shortcut == nil && detectedApp == nil))
+        .accessibilityLabel(shortcut.displayName)
+        .accessibilityHint("點擊啟動；長按可清除，拖曳可排序")
+        .disabled(remote.state != .connected)
+        .contextMenu {
+            Button("刪除 \(shortcut.displayName) 快捷鍵", systemImage: "trash", role: .destructive) {
+                saveShortcuts(AppShortcutCollection.removing(id: shortcut.id, from: shortcuts))
+                editingShortcutID = nil
+            }
+        }
         .simultaneousGesture(
             LongPressGesture(minimumDuration: 0.45)
-                .onEnded { _ in
-                    guard shortcut != nil else { return }
-                    isShortcutEditing = true
-                }
+                .onEnded { _ in editingShortcutID = shortcut.id }
         )
+    }
+
+    private func saveShortcuts(_ value: [AppShortcut]) {
+        do {
+            shortcutsData = String(decoding: try JSONEncoder().encode(value), as: UTF8.self)
+        } catch {
+            shortcutStorageError = error.localizedDescription
+        }
+    }
+
+    private func storeControlOrder(_ value: [String]) {
+        do {
+            controlOrderData = String(decoding: try JSONEncoder().encode(value), as: UTF8.self)
+        } catch {
+            shortcutStorageError = error.localizedDescription
+        }
+    }
+
+    private func migrateLegacyShortcutIfNeeded() {
+        do {
+            guard try loadShortcuts().isEmpty,
+                  let legacy = AppShortcut(packageName: legacyShortcutPackage, displayName: legacyShortcutName) else {
+                return
+            }
+            saveShortcuts([legacy])
+            legacyShortcutPackage = ""
+            legacyShortcutName = ""
+        } catch {
+            shortcutStorageError = error.localizedDescription
+        }
+    }
+
+    private func validateShortcutStorage() {
+        do {
+            _ = try loadShortcuts()
+        } catch {
+            shortcutStorageError = error.localizedDescription
+        }
+    }
+
+    private func loadShortcuts() throws -> [AppShortcut] {
+        let decoded = try JSONDecoder().decode([AppShortcut].self, from: Data(shortcutsData.utf8))
+        var seen = Set<String>()
+        return decoded.filter { seen.insert($0.packageName).inserted }
     }
 
     @ViewBuilder

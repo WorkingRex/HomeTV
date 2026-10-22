@@ -58,9 +58,11 @@ struct ReportedTVApp: Equatable {
     }
 }
 
-struct AppShortcut: Equatable {
+struct AppShortcut: Codable, Equatable, Identifiable {
     let packageName: String
     let displayName: String
+
+    var id: String { packageName }
 
     init?(packageName: String, displayName: String) {
         guard packageName.range(
@@ -100,10 +102,47 @@ struct AppShortcut: Equatable {
     }
 }
 
+enum AppShortcutCollection {
+    static func adding(_ shortcut: AppShortcut, to shortcuts: [AppShortcut]) -> [AppShortcut] {
+        guard !shortcuts.contains(where: { $0.packageName == shortcut.packageName }) else {
+            return shortcuts
+        }
+        return shortcuts + [shortcut]
+    }
+
+    static func removing(id: String, from shortcuts: [AppShortcut]) -> [AppShortcut] {
+        shortcuts.filter { $0.id != id }
+    }
+}
+
 enum AppShortcutIconKind: Equatable {
     case youtube
     case netflix
     case generic
+}
+
+enum RemoteControlLayout {
+    static func orderedIDs(availableIDs: [String], storedIDs: [String]) -> [String] {
+        var seen = Set<String>()
+        let available = availableIDs.filter { seen.insert($0).inserted }
+        let availableSet = Set(available)
+        let stored = storedIDs.filter { availableSet.contains($0) }
+        let storedSet = Set(stored)
+        return stored + available.filter { !storedSet.contains($0) }
+    }
+
+    static func moving(_ ids: [String], source: String, destination: String) -> [String] {
+        guard source != destination,
+              let sourceIndex = ids.firstIndex(of: source),
+              let destinationIndex = ids.firstIndex(of: destination) else {
+            return ids
+        }
+        var result = ids
+        let item = result.remove(at: sourceIndex)
+        let insertionIndex = sourceIndex < destinationIndex ? destinationIndex - 1 : destinationIndex
+        result.insert(item, at: insertionIndex)
+        return result
+    }
 }
 
 enum RemoteProtocolError: Error, Equatable {

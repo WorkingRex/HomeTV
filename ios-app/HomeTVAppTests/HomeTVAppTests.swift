@@ -45,6 +45,48 @@ final class HomeTVAppTests: XCTestCase {
         )
     }
 
+    func testAppShortcutCollectionPersistsMultipleUniqueApps() throws {
+        let shortcuts = [
+            try XCTUnwrap(AppShortcut(packageName: "com.netflix.ninja", displayName: "Netflix")),
+            try XCTUnwrap(AppShortcut(packageName: "com.google.android.youtube.tv", displayName: "YouTube")),
+        ]
+        let data = try JSONEncoder().encode(shortcuts)
+        XCTAssertEqual(try JSONDecoder().decode([AppShortcut].self, from: data), shortcuts)
+        XCTAssertEqual(Set(shortcuts.map(\.packageName)).count, shortcuts.count)
+        XCTAssertEqual(AppShortcutCollection.adding(shortcuts[0], to: shortcuts), shortcuts)
+        XCTAssertEqual(
+            AppShortcutCollection.adding(
+                try XCTUnwrap(AppShortcut(packageName: "com.example.tv", displayName: "Example")),
+                to: shortcuts
+            ).count,
+            3
+        )
+        XCTAssertEqual(
+            AppShortcutCollection.removing(id: shortcuts[0].id, from: shortcuts),
+            [shortcuts[1]]
+        )
+        XCTAssertEqual(AppShortcutCollection.removing(id: "missing", from: shortcuts), shortcuts)
+    }
+
+    func testControlLayoutPreservesSavedOrderAndPinsNewControlsAfterward() {
+        XCTAssertEqual(
+            RemoteControlLayout.orderedIDs(
+                availableIDs: ["back", "home", "volume", "shortcut:netflix"],
+                storedIDs: ["volume", "removed", "back"]
+            ),
+            ["volume", "back", "home", "shortcut:netflix"]
+        )
+    }
+
+    func testControlLayoutMovesTilesAndKeepsDirectionPadOutsideMovableIDs() {
+        let initial = ["back", "shortcut:netflix", "home"]
+        XCTAssertEqual(
+            RemoteControlLayout.moving(initial, source: "shortcut:netflix", destination: "back"),
+            ["shortcut:netflix", "back", "home"]
+        )
+        XCTAssertEqual(RemoteControlLayout.moving(initial, source: "missing", destination: "home"), initial)
+    }
+
     func testJoystickCenterTapConfirmsButDragAndLongPressDoNot() {
         XCTAssertTrue(JoystickTap.isConfirmation(startDistance: 0, knobRadius: 32, maximumTravel: 0, duration: 0.1))
         XCTAssertTrue(JoystickTap.isConfirmation(startDistance: 32, knobRadius: 32, maximumTravel: 9, duration: 0.5))
