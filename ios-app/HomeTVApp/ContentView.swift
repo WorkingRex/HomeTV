@@ -15,8 +15,10 @@ struct ContentView: View {
     @State private var isDiscoveryExpanded = true
     @State private var showConnectionSheet = false
     @State private var showRePairConfirmation = false
-    @State private var editingShortcutID: String?
+    @State private var isEditingControls = false
     @State private var shortcutStorageError: String?
+    @State private var activeDragID: String?
+    @State private var liveControlOrder: [String]?
     @AppStorage("com.rexylin.hometv.last-device-id") private var lastDeviceID = ""
     @AppStorage("com.rexylin.hometv.app-shortcuts") private var shortcutsData = "[]"
     @AppStorage("com.rexylin.hometv.app-shortcut.package") private var legacyShortcutPackage = ""
@@ -332,25 +334,60 @@ struct ContentView: View {
             : []
         let visibleIDs = availableIDs.filter { !["rewind", "playPause", "fastForward"].contains($0) || playbackIDs.contains($0) }
             + shortcuts.map { "shortcut:\($0.packageName)" }
-        let orderedIDs = RemoteControlLayout.orderedIDs(
+        let savedOrder = RemoteControlLayout.orderedIDs(
             availableIDs: visibleIDs,
             storedIDs: storedControlIDs
         )
+        let orderedIDs = liveControlOrder ?? savedOrder
 
-        return LazyVGrid(
-            columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())],
-            spacing: 10
-        ) {
-            ForEach(orderedIDs, id: \.self) { id in
-                controlTile(for: id)
-                    .draggable(id)
-                    .dropDestination(for: String.self) { items, _ in
-                        guard let source = items.first else { return false }
-                        storeControlOrder(
-                            RemoteControlLayout.moving(orderedIDs, source: source, destination: id)
-                        )
-                        return true
+        return VStack(spacing: 10) {
+            if isEditingControls {
+                HStack {
+                    Label("編輯遙控按鈕", systemImage: "arrow.up.and.down.and.arrow.left.and.right")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Button("完成") {
+                        finishControlEditing()
                     }
+                    .font(.caption.weight(.semibold))
+                }
+                .padding(.horizontal, 4)
+            }
+
+            LazyVGrid(
+                columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())],
+                spacing: 10
+            ) {
+                ForEach(orderedIDs, id: \.self) { id in
+                    controlTile(for: id)
+                        .opacity(activeDragID == id ? 0.35 : 1)
+                        .scaleEffect(activeDragID == id ? 0.96 : 1)
+                        .animation(.snappy(duration: 0.2), value: orderedIDs)
+                        .simultaneousGesture(
+                            LongPressGesture(minimumDuration: 0.45)
+                                .onEnded { _ in
+                                    withAnimation(.snappy) {
+                                        isEditingControls = true
+                                    }
+                                }
+                        )
+                        .modifier(
+                            ControlTileEditBehavior(
+                                isEditing: isEditingControls,
+                                onDragStart: {
+                                    activeDragID = id
+                                    liveControlOrder = orderedIDs
+                                },
+                                onDrop: ControlTileDropDelegate(
+                                    targetID: id,
+                                    order: $liveControlOrder,
+                                    draggedID: $activeDragID,
+                                    onCommit: storeControlOrder
+                                )
+                            )
+                        )
+                }
             }
         }
         .alert("快捷鍵儲存錯誤", isPresented: Binding(
@@ -420,7 +457,7 @@ struct ContentView: View {
         } ?? false
 
         return Button {
-            guard let detectedApp, !isAlreadySaved else { return }
+            guard !isEditingControls, let detectedApp, !isAlreadySaved else { return }
             saveShortcuts(AppShortcutCollection.adding(detectedApp, to: shortcuts))
         } label: {
             Image(systemName: "plus")
@@ -434,7 +471,7 @@ struct ContentView: View {
 
     private func shortcutButton(_ shortcut: AppShortcut) -> some View {
         Button {
-            guard editingShortcutID != shortcut.id else { return }
+            guard !isEditingControls else { return }
             remote.launchApp(uri: shortcut.appLink)
         } label: {
             VStack(spacing: 3) {
@@ -447,10 +484,9 @@ struct ContentView: View {
             .frame(maxWidth: .infinity)
             .frame(height: 56)
             .overlay(alignment: .topTrailing) {
-                if editingShortcutID == shortcut.id {
+                if isEditingControls {
                     Button {
                         saveShortcuts(AppShortcutCollection.removing(id: shortcut.id, from: shortcuts))
-                        editingShortcutID = nil
                     } label: {
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 19))
@@ -465,18 +501,17 @@ struct ContentView: View {
         }
         .buttonStyle(.bordered)
         .accessibilityLabel(shortcut.displayName)
-        .accessibilityHint("點擊啟動；長按可清除，拖曳可排序")
+        .accessibilityHint(isEditingControls ? "編輯模式：可刪除或拖曳排序" : "點擊啟動；長按進入編輯模式")
         .disabled(remote.state != .connected)
-        .contextMenu {
-            Button("刪除 \(shortcut.displayName) 快捷鍵", systemImage: "trash", role: .destructive) {
-                saveShortcuts(AppShortcutCollection.removing(id: shortcut.id, from: shortcuts))
-                editingShortcutID = nil
-            }
+    }
+
+    private func finishControlEditing() {
+        if let liveControlOrder {
+            storeControlOrder(liveControlOrder)
         }
-        .simultaneousGesture(
-            LongPressGesture(minimumDuration: 0.45)
-                .onEnded { _ in editingShortcutID = shortcut.id }
-        )
+        self.liveControlOrder = nil
+        activeDragID = nil
+        isEditingControls = false
     }
 
     private func saveShortcuts(_ value: [AppShortcut]) {
@@ -685,6 +720,7 @@ struct ContentView: View {
 
     private func commandButton(_ command: RemoteCommand) -> some View {
         Button {
+            guard !isEditingControls else { return }
             if remote.state == .connected {
                 remote.send(command)
                 status = "Sent \(command.rawValue)"
@@ -708,6 +744,66 @@ private enum ControlMode: String, CaseIterable, Identifiable {
     case joystick = "搖桿"
 
     var id: String { rawValue }
+}
+
+private struct ControlTileDropDelegate: DropDelegate {
+    let targetID: String
+    @Binding var order: [String]?
+    @Binding var draggedID: String?
+    let onCommit: ([String]) -> Void
+
+    func dropEntered(info: DropInfo) {
+        guard let draggedID, draggedID != targetID, let order,
+              order.contains(draggedID), order.contains(targetID) else {
+            return
+        }
+        withAnimation(.snappy(duration: 0.2)) {
+            self.order = RemoteControlLayout.moving(
+                order,
+                source: draggedID,
+                destination: targetID
+            )
+        }
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        DropProposal(operation: .move)
+    }
+
+    func performDrop(info: DropInfo) -> Bool {
+        guard let order else {
+            draggedID = nil
+            return false
+        }
+        onCommit(order)
+        draggedID = nil
+        self.order = nil
+        return true
+    }
+
+    func validateDrop(info: DropInfo) -> Bool {
+        draggedID != nil
+    }
+}
+
+private struct ControlTileEditBehavior: ViewModifier {
+    let isEditing: Bool
+    let onDragStart: () -> Void
+    let onDrop: ControlTileDropDelegate
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if isEditing {
+            content
+                .onDrag {
+                    onDragStart()
+                    return NSItemProvider(object: onDrop.targetID as NSString)
+                }
+                .onDrop(of: [.text], delegate: onDrop)
+        } else {
+            content
+        }
+    }
 }
 
 private struct JoystickControl: View {

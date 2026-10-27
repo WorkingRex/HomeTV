@@ -68,6 +68,9 @@ Remote connections have a 10-second deadline covering TLS and the protocol
 handshake. Reconnecting with an existing identity retries up to three attempts;
 failure preserves the identity and reports an error instead of automatically
 starting pairing. A closed socket is reported rather than left in "Connecting".
+If the TV closes the remote socket while switching apps, an established session
+also retries the existing paired connection up to two times before reporting an
+error; it does not request a new pairing code.
 When testing multiple phones, close HomeTV on the other phone to check whether
 the TV's remote service permits concurrent sessions. Pairing storage and
 simultaneous connection support are separate capabilities.
@@ -79,10 +82,13 @@ certificates are reused, not regenerated on every launch or re-pair.
 
 App shortcuts are stored locally on each phone. With the TV connected and an app
 reported, tap **+** to add it. Duplicate apps are ignored. Tap a shortcut to
-launch it; long-press it to reveal the clear button. Drag shortcut or fixed
-control buttons to rearrange them; the direction control panel remains fixed.
-Delete a shortcut either from its long-press context menu or by tapping the
-revealed X button.
+launch it. Long-press any control button to enter edit mode; only then can
+shortcuts and fixed controls be dragged to rearrange, and shortcut X buttons
+appear for deletion. Tap **完成** to leave edit mode. The direction control
+panel remains fixed.
+Reordering updates live as a dragged tile enters each target, then persists on
+drop. The dragged tile dims and neighboring controls animate into the new
+positions.
 The TV protocol reports package names, not original app artwork, so YouTube and
 Netflix use built-in recognizable glyphs and other apps use a generic app icon.
 Launching uses app-specific links for YouTube and Netflix and an

@@ -135,6 +135,7 @@ final class TVRemoteClient: ObservableObject {
     func launchApp(uri: String) {
         guard state == .connected else { return }
         do {
+            logger.debug("Sending app launch link: \(uri, privacy: .public)")
             try send(RemoteMessageFactory.launchApp(uri: uri), through: remoteConnection)
         } catch {
             state = .failed(error.localizedDescription)
@@ -295,10 +296,11 @@ final class TVRemoteClient: ObservableObject {
             state = .failed("電視不再接受這支手機的配對憑證。請點「重新配對」；若使用多支手機，請將各手機更新後各自重新配對一次。")
             return
         }
-        guard shouldFallbackToPairing, state == .connecting else {
+        guard state == .connecting || state == .connected else {
             state = .failed(error.localizedDescription)
             return
         }
+        state = .connecting
         retryRemoteConnection(after: error)
     }
 
@@ -317,8 +319,9 @@ final class TVRemoteClient: ObservableObject {
                 return
             }
 
-            guard let self, self.shouldFallbackToPairing else { return }
+            guard let self, self.state == .connecting else { return }
             do {
+                self.logger.debug("Retrying existing paired remote connection (\(self.remoteReconnectAttempts, privacy: .public)/2)")
                 try self.openRemoteConnection()
             } catch {
                 self.state = .failed(error.localizedDescription)
